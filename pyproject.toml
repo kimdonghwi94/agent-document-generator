@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-document-generator"
+version = "1.0.0"
+description = "A2A Protocol Sub Agent Server for generating HTML/Markdown documents from user queries"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "a2a-sdk[http-server]>=0.3.0",
+    "openai>=1.0.0",
+    "pydantic>=2.5.0",
+    "httpx>=0.25.0",
+    "aiofiles>=23.2.1",
+    "jinja2>=3.1.2",
+    "markdown>=3.5.1",
+    "python-dotenv>=1.0.0",
+    "uvicorn>=0.34.2",
+    "sse-starlette>=2.3.5"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.1",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0"
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"

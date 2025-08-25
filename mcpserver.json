@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "mcp-pandoc": {
+      "command": "uvx",
+      "args": ["mcp-pandoc"],
+      "description": "Pandoc MCP server for document conversion and generation"
+    }
+  }
+}

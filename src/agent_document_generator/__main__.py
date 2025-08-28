@@ -116,7 +116,7 @@ def create_skills_from_mcp():
 def create_app():
     """Creates and configures the A2AStarletteApplication instance."""
     config = Config()
-    
+
     # Create skills dynamically from MCP configuration
     all_skills = create_skills_from_mcp()
 
@@ -147,12 +147,8 @@ def create_app():
         agent_card=agent_card,
         http_handler=request_handler,
     )
-    app = server.build()
 
-    @app.get("/")
-    def root():
-        return {"status": "ok"}
-    return app
+    return server.build()
 
 
 def main():
@@ -163,7 +159,7 @@ def main():
     # Run server
     print(f"Starting Document Generator Agent on {config.HOST}:{config.PORT}")
     uvicorn.run(
-        app, 
+        app,
         host=config.HOST,
         port=config.PORT,
         log_level="info"

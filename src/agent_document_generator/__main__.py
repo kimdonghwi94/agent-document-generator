@@ -123,14 +123,12 @@ def create_app():
     agent_card = AgentCard(
         name='Document Generator Agent',
         description='Generates HTML and Markdown documents from user queries using LLM and MCP servers',
-        url=f'http://localhost:{config.PORT}/',
+        url=f'https://agent-document-generator.vercel.app/',
         version='1.0.0',
         default_input_modes=['text', 'text/plain'],
         default_output_modes=['text', 'application/json'],
         capabilities=AgentCapabilities(
-            streaming=False,
-            push_notifications=False,
-            state_transition_history=False
+            streaming=True,
         ),
         skills=all_skills,
     )

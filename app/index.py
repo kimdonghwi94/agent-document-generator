@@ -1,4 +1,4 @@
-# api/index.py
+# app/index.py
 import sys
 from pathlib import Path
 

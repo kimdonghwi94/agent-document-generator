@@ -5,8 +5,8 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 
-from agent_document_generator.agent_executor import DocumentGeneratorAgentExecutor
-from agent_document_generator.config import Config
+from src.agent_document_generator.agent_executor import DocumentGeneratorAgentExecutor
+from src.agent_document_generator.config import Config
 
 
 def create_skills_from_mcp():

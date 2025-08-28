@@ -146,8 +146,13 @@ def create_app():
         agent_card=agent_card,
         http_handler=request_handler,
     )
+    app = server.build()
 
-    return server.build()
+    @app.route("/")
+    async def root(request):
+        return {"status": "ok"}
+
+    return app
 
 
 def main():

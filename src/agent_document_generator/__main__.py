@@ -1,6 +1,5 @@
 """Main entry point for the Document Generator Agent."""
 
-import uvicorn
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -153,6 +152,7 @@ def create_app():
 
 def main():
     """Main entry point for the Document Generator Agent."""
+    import uvicorn
     config = Config()
     app = create_app()
 

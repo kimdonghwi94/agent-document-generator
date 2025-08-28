@@ -88,7 +88,7 @@ PORT=8001
 
 ```bash
 # UV 사용
-uv run python -m src.agent_document_generator
+uv run python -m api.agent_document_generator
 
 # 또는 npm script 사용
 npm run start

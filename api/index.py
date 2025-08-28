@@ -1,8 +1,9 @@
-import sys
+import os, sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'src'))
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if SRC.exists():
+    sys.path.insert(0, str(SRC))
 
 from agent_document_generator.__main__ import create_app
-
 app = create_app()

@@ -147,8 +147,12 @@ def create_app():
         agent_card=agent_card,
         http_handler=request_handler,
     )
-    
-    return server.build()
+    app = server.build()
+
+    @app.get("/")
+    def root():
+        return {"status": "ok"}
+    return app
 
 
 def main():
@@ -160,7 +164,7 @@ def main():
     print(f"Starting Document Generator Agent on {config.HOST}:{config.PORT}")
     uvicorn.run(
         app, 
-        host=config.HOST, 
+        host=config.HOST,
         port=config.PORT,
         log_level="info"
     )

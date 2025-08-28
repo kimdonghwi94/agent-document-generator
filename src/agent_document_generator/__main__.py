@@ -113,8 +113,8 @@ def create_skills_from_mcp():
     return skills
 
 
-def main():
-    """Main entry point for the Document Generator Agent."""
+def create_app():
+    """Creates and configures the A2AStarletteApplication instance."""
     config = Config()
     
     # Create skills dynamically from MCP configuration
@@ -147,11 +147,19 @@ def main():
         agent_card=agent_card,
         http_handler=request_handler,
     )
+    
+    return server.build()
+
+
+def main():
+    """Main entry point for the Document Generator Agent."""
+    config = Config()
+    app = create_app()
 
     # Run server
     print(f"Starting Document Generator Agent on {config.HOST}:{config.PORT}")
     uvicorn.run(
-        server.build(), 
+        app, 
         host=config.HOST, 
         port=config.PORT,
         log_level="info"

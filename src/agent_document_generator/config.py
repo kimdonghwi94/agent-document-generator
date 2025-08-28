@@ -26,7 +26,7 @@ class Config:
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     
     # Output Configuration
-    OUTPUT_DIR: Path = Path(os.getenv("OUTPUT_DIR", "./output"))
+    OUTPUT_DIR: Path = Path(os.getenv("OUTPUT_DIR", "./"))
     DEFAULT_FORMAT: str = os.getenv("DEFAULT_FORMAT", "html")
     
     # MCP Configuration
@@ -43,5 +43,6 @@ class Config:
         return {"mcpServers": {}}
     
     def __init__(self):
+        pass
         """Initialize configuration and create directories."""
-        self.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        # self.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

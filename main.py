@@ -1,6 +1,7 @@
 from src.agent_document_generator.__main__ import create_app
 
 app = create_app()
+
 if __name__ == '__main__':
     import uvicorn
     from src.agent_document_generator.__main__ import create_app

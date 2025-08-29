@@ -14,6 +14,9 @@ from .config import Config
 from .document_generator import DocumentGenerator
 from .mcp_manager import MCPManager
 from .models import UserQuery, DocumentFormat
+from .skill_classifier import SkillClassifier, SkillType
+from .skill_handlers import SkillHandlers
+from .rag_manager import RAGManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +28,14 @@ class DocumentGeneratorAgentCore:
         self.config = Config()
         self.mcp_manager = MCPManager(self.config)
         self.document_generator = DocumentGenerator(self.config, self.mcp_manager)
+        self.rag_manager = RAGManager(self.config)
+        self.skill_classifier = SkillClassifier()
+        self.skill_handlers = SkillHandlers(
+            self.config, 
+            self.mcp_manager, 
+            self.document_generator, 
+            self.rag_manager
+        )
         self.startup_complete = False
 
     async def startup(self):
@@ -37,6 +48,9 @@ class DocumentGeneratorAgentCore:
         # Start MCP servers
         await self.mcp_manager.start_all()
         
+        # Initialize RAG system
+        await self.rag_manager.initialize()
+        
         self.startup_complete = True
         logger.info("Document Generator Agent startup complete")
 
@@ -44,9 +58,10 @@ class DocumentGeneratorAgentCore:
         """Cleanup agent resources."""
         logger.info("Shutting down Document Generator Agent...")
         await self.mcp_manager.stop_all()
+        await self.rag_manager.cleanup()
 
     async def process_message(self, content: str) -> str:
-        """Process user message and generate document."""
+        """Process user message using skill-based routing."""
         try:
             # Ensure agent is started
             if not self.startup_complete:
@@ -54,18 +69,42 @@ class DocumentGeneratorAgentCore:
 
             logger.info(f"Processing message: {content}")
 
-            # Parse the user query
-            user_query = self._parse_user_query(content)
+            # Parse the user query to get context
+            parsed_query = self._parse_user_query(content)
+            context = {
+                "format": parsed_query.format.value if parsed_query.format else None,
+                "context": parsed_query.context,
+                "metadata": parsed_query.metadata
+            }
             
-            # Generate document
-            response = await self.document_generator.generate_document(user_query)
+            # Classify the query to determine which skill to use
+            skill_type = await self.skill_classifier.classify_query(parsed_query.question, context)
             
-            # Format response for A2A
-            return self._format_response(response)
+            logger.info(f"Query classified as: {skill_type.value}")
+            print("skill type 은 ",skill_type)
+            # Route to appropriate skill handler
+            if skill_type == SkillType.HTML_GENERATION:
+                response = await self.skill_handlers.handle_html_generation(parsed_query.question, context)
+            elif skill_type == SkillType.MARKDOWN_GENERATION:
+                response = await self.skill_handlers.handle_markdown_generation(parsed_query.question, context)
+            elif skill_type == SkillType.URL_QA:
+                response = await self.skill_handlers.handle_url_qa(parsed_query.question, context)
+            elif skill_type == SkillType.RAG_QA:
+                response = await self.skill_handlers.handle_rag_qa(parsed_query.question, context)
+            elif skill_type == SkillType.WEB_SEARCH:
+                response = await self.skill_handlers.handle_web_search(parsed_query.question, context)
+            elif skill_type == SkillType.GENERAL_QA:
+                response = await self.skill_handlers.handle_general_qa(parsed_query.question, context)
+            else:
+                # Fallback to general QA
+                logger.warning(f"Unknown skill type: {skill_type}, falling back to general QA")
+                response = await self.skill_handlers.handle_general_qa(parsed_query.question, context)
+            print("결과 출력은 : ",response)
+            return response
 
         except Exception as e:
             logger.error(f"Error processing message: {e}")
-            return f"Error processing request: {str(e)}"
+            return f"요청 처리 중 오류가 발생했습니다: {str(e)}"
 
     def _parse_user_query(self, content: str) -> UserQuery:
         """Parse message content into UserQuery."""

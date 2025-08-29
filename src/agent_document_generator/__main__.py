@@ -9,105 +9,76 @@ from src.agent_document_generator.agent_executor import DocumentGeneratorAgentEx
 from src.agent_document_generator.config import Config
 
 
-def create_skills_from_mcp():
-    """Create skills dynamically from MCP server configuration."""
-    config = Config()
-    mcp_config = config.load_mcp_config()
+def create_agent_skills():
+    """Create the 5 main agent skills."""
     skills = []
     
-    # Base document generation skills
+    # Skill 1: HTML Document Generation
     html_skill = AgentSkill(
-        id='generate_html',
-        name='HTML Document Generation',
-        description='Generate comprehensive HTML documents from user queries using LLM',
-        tags=['html', 'document', 'generation', 'llm'],
+        id='html_generation',
+        name='HTML 문서 생성',
+        description='사용자 요청에 따라 구조화된 HTML 문서를 생성합니다',
+        tags=['html', 'document', 'generation'],
         examples=[
-            'Create an HTML page about quantum computing',
-            'Generate HTML documentation for Python functions',
-            'Make an HTML guide for beginners'
+            'HTML 페이지 만들어줘',
+            '양자 컴퓨팅에 대한 HTML 문서 생성',
+            'Python 함수 설명서를 HTML로 작성'
         ],
     )
     
+    # Skill 2: Markdown Document Generation
     markdown_skill = AgentSkill(
-        id='generate_markdown',
-        name='Markdown Document Generation', 
-        description='Generate well-structured Markdown documents from user queries using LLM',
-        tags=['markdown', 'document', 'generation', 'llm'],
+        id='markdown_generation',
+        name='Markdown 문서 생성',
+        description='깔끔하고 읽기 쉬운 마크다운 문서를 생성합니다',
+        tags=['markdown', 'document', 'generation'],
         examples=[
-            'Create a markdown guide for Python beginners',
-            'Generate markdown documentation for APIs',
-            'Make a markdown tutorial about machine learning'
+            '마크다운 문서 만들어줘',
+            'Python 초보자 가이드를 마크다운으로 작성',
+            'API 문서를 마크다운 형식으로 생성'
         ],
     )
     
-    skills.extend([html_skill, markdown_skill])
+    # Skill 3: URL-based Q&A
+    url_qa_skill = AgentSkill(
+        id='url_qa',
+        name='URL 기반 질의응답',
+        description='제공된 URL의 내용을 분석하여 관련 질문에 답변합니다',
+        tags=['url', 'qa', 'analysis', 'mcp'],
+        examples=[
+            'https://example.com 이 사이트에 대해 설명해줘',
+            '다음 URL의 주요 내용은 무엇인가요?',
+            '이 웹페이지에서 중요한 정보를 요약해줘'
+        ],
+    )
     
-    # Add MCP server skills
-    for name, server_config in mcp_config.get("mcpServers", {}).items():
-        description = server_config.get("description", f"Use {name} MCP server for enhanced functionality")
-        
-        if name == "mcp-pandoc":
-            skill = AgentSkill(
-                id=f'mcp_{name.replace("-", "_")}',
-                name='Document Format Conversion',
-                description='Convert documents between different formats (HTML, Markdown, PDF, etc.) using Pandoc',
-                tags=['pandoc', 'conversion', 'format', 'mcp'],
-                examples=[
-                    'Convert this HTML to Markdown',
-                    'Generate a PDF version of this document',
-                    'Convert Markdown to HTML with better formatting'
-                ],
-            )
-        elif name == "mcp-filesystem":
-            skill = AgentSkill(
-                id=f'mcp_{name.replace("-", "_")}',
-                name='File System Operations',
-                description='Save, read, and manage generated documents in the file system',
-                tags=['filesystem', 'files', 'storage', 'mcp'],
-                examples=[
-                    'Save this document to a specific location',
-                    'Read an existing document for reference',
-                    'Organize generated files by category'
-                ],
-            )
-        elif name == "markdownify":
-            skill = AgentSkill(
-                id=f'mcp_{name}',
-                name='HTML to Markdown Conversion',
-                description='Convert HTML content to clean, well-formatted Markdown',
-                tags=['html', 'markdown', 'conversion', 'mcp'],
-                examples=[
-                    'Convert this HTML page to Markdown',
-                    'Clean up HTML and make it Markdown',
-                    'Extract content from HTML as Markdown'
-                ],
-            )
-        elif name == "playwright":
-            skill = AgentSkill(
-                id=f'mcp_{name}',
-                name='Web Content Extraction',
-                description='Extract content from web pages and integrate into generated documents',
-                tags=['web', 'scraping', 'extraction', 'playwright', 'mcp'],
-                examples=[
-                    'Extract content from this URL and create a document',
-                    'Get the latest information from a website',
-                    'Take screenshots and include in documentation'
-                ],
-            )
-        else:
-            # Generic MCP server skill
-            skill = AgentSkill(
-                id=f'mcp_{name.replace("-", "_")}',
-                name=f'{name.title()} Integration',
-                description=description,
-                tags=[name, 'mcp', 'integration'],
-                examples=[
-                    f'Use {name} to enhance my document',
-                    f'Apply {name} functionality to this task'
-                ],
-            )
-        
-        skills.append(skill)
+    # Skill 4: Agent Self Q&A (RAG)
+    rag_qa_skill = AgentSkill(
+        id='rag_qa',
+        name='에이전트 정보 질의응답',
+        description='에이전트의 기능과 능력에 대한 질문에 RAG를 활용하여 답변합니다',
+        tags=['rag', 'self-knowledge', 'qa'],
+        examples=[
+            '너는 무엇을 할 수 있니?',
+            '당신의 주요 기능은 무엇인가요?',
+            '에이전트 소개해줘'
+        ],
+    )
+    
+    # Skill 5: Web Search
+    web_search_skill = AgentSkill(
+        id='web_search',
+        name='웹 검색',
+        description='최신 정보를 웹에서 검색하여 사용자에게 제공합니다',
+        tags=['search', 'web', 'information', 'mcp'],
+        examples=[
+            'Python 최신 버전 정보 검색해줘',
+            '2024년 AI 트렌드 찾아봐',
+            '최근 기술 뉴스 알아봐'
+        ],
+    )
+    
+    skills.extend([html_skill, markdown_skill, url_qa_skill, rag_qa_skill, web_search_skill])
     
     return skills
 
@@ -116,15 +87,15 @@ def create_app():
     """Creates and configures the A2AStarletteApplication instance."""
     config = Config()
 
-    # Create skills dynamically from MCP configuration
-    all_skills = create_skills_from_mcp()
+    # Create the 5 main agent skills
+    all_skills = create_agent_skills()
 
     # Create agent card
     agent_card = AgentCard(
         name='Document Generator Agent',
-        description='Generates HTML and Markdown documents from user queries using LLM and MCP servers',
+        description='5가지 주요 기능을 제공하는 AI 에이전트: HTML/Markdown 문서 생성, URL 기반 질의응답, 에이전트 정보 질의응답(RAG), 웹 검색',
         url=f'https://agent-document-generator.vercel.app/',
-        version='1.0.0',
+        version='2.0.0',
         default_input_modes=['text', 'text/plain'],
         default_output_modes=['text', 'application/json'],
         capabilities=AgentCapabilities(

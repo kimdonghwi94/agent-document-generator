@@ -20,7 +20,10 @@ class DocumentGenerator:
     def __init__(self, config: Config, mcp_manager: MCPManager):
         self.config = config
         self.mcp_manager = mcp_manager
-        self.client = openai.AsyncOpenAI(api_key=config.OPENAI_API_KEY)
+        self.client = openai.AsyncOpenAI(
+            api_key=config.OPENAI_API_KEY,
+            timeout=30.0  # 30 second timeout for document generation
+        )
     
     async def generate_document(self, query: UserQuery) -> DocumentGenerationResponse:
         """Generate document from user query."""

@@ -28,6 +28,10 @@ class SkillClassifier:
 
     def __init__(self):
         self.config = Config()
+        
+        # Cache for classification results to avoid repeated LLM calls
+        self._classification_cache = {}
+        self._cache_max_size = 100
 
     async def classify_query(self, query: str, context: Optional[Dict[str, Any]] = None) -> SkillType:
         """
@@ -47,12 +51,12 @@ class SkillClassifier:
             logger.info("URL detected - routing to URL_QA skill")
             return SkillType.URL_QA
         
-        # Use LLM for classification first
+        # Use LLM for classification
         try:
             skill_type = await self._classify_with_llm(query)
             logger.info(f"LLM classified query as: {skill_type.value}")
             
-            # Only override LLM classification if there's explicit document generation request
+            # Check for format override for LLM results
             if context and context.get("format") and self._is_document_generation_request(query.lower()):
                 format_type = context["format"].lower()
                 if "html" in format_type and skill_type not in [SkillType.GENERAL_QA, SkillType.RAG_QA]:
@@ -69,10 +73,22 @@ class SkillClassifier:
             logger.info("Falling back to GENERAL_QA skill due to classification error")
             return SkillType.GENERAL_QA
 
+
     async def _classify_with_llm(self, query: str) -> SkillType:
-        """Use LLM to classify the query."""
+        """Use LLM to classify the query with caching."""
+        # Create cache key from normalized query
+        cache_key = query.lower().strip()
+        
+        # Check cache first
+        if cache_key in self._classification_cache:
+            logger.debug(f"Cache hit for query: {query}")
+            return self._classification_cache[cache_key]
+        
         try:
-            client = openai.AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
+            client = openai.AsyncOpenAI(
+                api_key=self.config.OPENAI_API_KEY,
+                timeout=10.0  # 10 second timeout
+            )
             
             # Get classification prompts
             prompts = AgentPrompts.get_skill_classification_prompt(query)
@@ -83,8 +99,8 @@ class SkillClassifier:
                     {"role": "system", "content": prompts["system"]},
                     {"role": "user", "content": prompts["user"]}
                 ],
-                max_tokens=50,
-                temperature=0.1
+                max_tokens=20,  # Reduced tokens for faster response
+                temperature=0.0  # Deterministic for classification
             )
             
             classification_result = response.choices[0].message.content.strip().upper()
@@ -100,11 +116,28 @@ class SkillClassifier:
                 "GENERAL_QA": SkillType.GENERAL_QA
             }
             
-            return skill_mapping.get(classification_result, SkillType.RAG_QA)
+            result = skill_mapping.get(classification_result, SkillType.RAG_QA)
+            
+            # Store in cache
+            self._store_in_cache(cache_key, result)
+            
+            return result
             
         except Exception as e:
             logger.error(f"LLM classification error: {e}")
             return SkillType.RAG_QA
+
+    def _store_in_cache(self, cache_key: str, result: SkillType):
+        """Store classification result in cache with size management."""
+        # If cache is full, remove oldest entry (simple FIFO)
+        if len(self._classification_cache) >= self._cache_max_size:
+            # Remove first (oldest) entry
+            oldest_key = next(iter(self._classification_cache))
+            del self._classification_cache[oldest_key]
+            logger.debug(f"Cache full, removed oldest entry: {oldest_key}")
+        
+        self._classification_cache[cache_key] = result
+        logger.debug(f"Stored in cache: {cache_key} -> {result.value}")
 
     def _contains_url(self, query: str) -> bool:
         """Check if query contains a valid URL."""

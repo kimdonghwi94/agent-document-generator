@@ -45,11 +45,20 @@ class DocumentGeneratorAgentCore:
             
         logger.info("Starting Document Generator Agent...")
         
-        # Start MCP servers
-        await self.mcp_manager.start_all()
+        # Run initialization tasks concurrently for faster startup
+        import asyncio
+        startup_tasks = [
+            self.mcp_manager.start_all(),
+            self.rag_manager.initialize()
+        ]
         
-        # Initialize RAG system
-        await self.rag_manager.initialize()
+        # Execute all startup tasks in parallel
+        results = await asyncio.gather(*startup_tasks, return_exceptions=True)
+        
+        # Check for any failures
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.warning(f"Startup task {i} failed: {result}")
         
         self.startup_complete = True
         logger.info("Document Generator Agent startup complete")
@@ -62,27 +71,40 @@ class DocumentGeneratorAgentCore:
 
     async def process_message(self, content: str) -> str:
         """Process user message using skill-based routing."""
+        import time
+        start_time = time.time()
+        
         try:
             # Ensure agent is started
+            startup_start = time.time()
             if not self.startup_complete:
                 await self.startup()
+                startup_time = time.time() - startup_start
+                logger.info(f"Startup completed in {startup_time:.2f}s")
 
             logger.info(f"Processing message: {content}")
 
             # Parse the user query to get context
+            parse_start = time.time()
             parsed_query = self._parse_user_query(content)
             context = {
                 "format": parsed_query.format.value if parsed_query.format else None,
                 "context": parsed_query.context,
                 "metadata": parsed_query.metadata
             }
+            parse_time = time.time() - parse_start
             
             # Classify the query to determine which skill to use
+            classify_start = time.time()
             skill_type = await self.skill_classifier.classify_query(parsed_query.question, context)
+            classify_time = time.time() - classify_start
+            logger.info(f"Classification took {classify_time:.2f}s")
             
             logger.info(f"Query classified as: {skill_type.value}")
             print("skill type 은 ",skill_type)
-            # Route to appropriate skill handler
+            
+            # Route to appropriate skill handler with timing
+            handler_start = time.time()
             if skill_type == SkillType.HTML_GENERATION:
                 response = await self.skill_handlers.handle_html_generation(parsed_query.question, context)
             elif skill_type == SkillType.MARKDOWN_GENERATION:
@@ -99,6 +121,12 @@ class DocumentGeneratorAgentCore:
                 # Fallback to general QA
                 logger.warning(f"Unknown skill type: {skill_type}, falling back to general QA")
                 response = await self.skill_handlers.handle_general_qa(parsed_query.question, context)
+                
+            handler_time = time.time() - handler_start
+            total_time = time.time() - start_time
+            
+            logger.info(f"Handler execution took {handler_time:.2f}s")
+            logger.info(f"Total request processing took {total_time:.2f}s")
             print("결과 출력은 : ",response)
             return response
 

@@ -216,7 +216,10 @@ Markdown 문서가 성공적으로 생성되어 A2A 프로토콜로 전송됩니
         logger.info("Handling general QA request")
         
         try:
-            client = openai.AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
+            client = openai.AsyncOpenAI(
+                api_key=self.config.OPENAI_API_KEY,
+                timeout=15.0  # 15 second timeout for general QA
+            )
             
             # Use standardized prompts from AgentPrompts
             prompts = AgentPrompts.get_general_qa_prompt(query)
@@ -227,7 +230,7 @@ Markdown 문서가 성공적으로 생성되어 A2A 프로토콜로 전송됩니
                     {"role": "system", "content": prompts["system"]},
                     {"role": "user", "content": prompts["user"]}
                 ],
-                max_tokens=500,
+                max_tokens=300,  # Reduced for faster response
                 temperature=0.7
             )
             
@@ -260,51 +263,26 @@ Markdown 문서가 성공적으로 생성되어 A2A 프로토콜로 전송됩니
         # Remove URL from query
         question = query.replace(url, "").strip()
         
-        # Remove common prefixes
-        prefixes_to_remove = [
-            "이 url", "이 URL", "이 웹사이트", "이 사이트", "이 페이지",
-            "다음 url", "다음 URL", "다음 웹사이트", "다음 사이트", "다음 페이지",
-            "위 url", "위 URL", "위 웹사이트", "위 사이트", "위 페이지"
-        ]
-        
-        for prefix in prefixes_to_remove:
-            if question.lower().startswith(prefix.lower()):
-                question = question[len(prefix):].strip()
-                break
-        
-        # Remove common connecting words
-        if question.startswith(("에서", "에 대해", "에 대한", "의", "을", "를", "에서는")):
-            question = question[1:].strip() if len(question) > 1 else question
+        # Simple cleanup - remove leading/trailing whitespace and common particles
+        question = question.strip()
+        if not question:
+            return "이 웹페이지의 내용에 대해 설명해 주세요."
             
-        return question if question else "이 웹페이지의 내용에 대해 설명해 주세요."
+        return question
 
     def _extract_search_terms(self, query: str) -> str:
         """Extract search terms from query."""
-        # Remove search-related prefixes
-        search_prefixes = [
-            "검색해", "찾아", "조사해", "알아봐", "찾아봐", "검색해줘", "찾아줘",
-            "search", "find", "research", "look up"
-        ]
-        
-        search_terms = query.lower().strip()
-        for prefix in search_prefixes:
-            if search_terms.startswith(prefix.lower()):
-                search_terms = search_terms[len(prefix):].strip()
-                break
-                
-        # Remove common suffixes
-        suffixes_to_remove = ["줘", "주세요", "해줘", "해주세요", "봐", "보세요"]
-        for suffix in suffixes_to_remove:
-            if search_terms.endswith(suffix):
-                search_terms = search_terms[:-len(suffix)].strip()
-                break
-                
+        # Simple cleanup - return the query with basic trimming
+        search_terms = query.strip()
         return search_terms if search_terms else query
 
     async def _generate_url_qa_response(self, url: str, content_summary: str, question: str) -> str:
         """Generate final response for URL QA using LLM."""
         try:
-            client = openai.AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
+            client = openai.AsyncOpenAI(
+                api_key=self.config.OPENAI_API_KEY,
+                timeout=20.0  # 20 second timeout for URL QA
+            )
             
             # Use standardized prompts
             prompts = AgentPrompts.get_url_qa_prompt(url, content_summary, question)
@@ -315,7 +293,7 @@ Markdown 문서가 성공적으로 생성되어 A2A 프로토콜로 전송됩니
                     {"role": "system", "content": prompts["system"]},
                     {"role": "user", "content": prompts["user"]}
                 ],
-                max_tokens=800,
+                max_tokens=500,  # Reduced for faster response
                 temperature=0.7
             )
             
@@ -351,7 +329,10 @@ Markdown 문서가 성공적으로 생성되어 A2A 프로토콜로 전송됩니
                 results_text += f"[{i}] {title}\nURL: {url}\n설명: {snippet}\n\n"
             
             # Use standardized prompts for formatting
-            client = openai.AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
+            client = openai.AsyncOpenAI(
+                api_key=self.config.OPENAI_API_KEY,
+                timeout=15.0  # 15 second timeout for search formatting
+            )
             prompts = AgentPrompts.get_web_search_prompt(search_terms, results_text)
 
             response = await client.chat.completions.create(
@@ -360,7 +341,7 @@ Markdown 문서가 성공적으로 생성되어 A2A 프로토콜로 전송됩니
                     {"role": "system", "content": prompts["system"]},
                     {"role": "user", "content": prompts["user"]}
                 ],
-                max_tokens=1000,
+                max_tokens=600,  # Reduced for faster response
                 temperature=0.3
             )
             

@@ -165,7 +165,10 @@ class RAGManager:
     async def _generate_embedding(self, text: str) -> List[float]:
         """Generate embedding for text using OpenAI."""
         try:
-            client = openai.AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
+            client = openai.AsyncOpenAI(
+                api_key=self.config.OPENAI_API_KEY,
+                timeout=10.0  # 10 second timeout for embeddings
+            )
             response = await client.embeddings.create(
                 input=text,
                 model="text-embedding-ada-002"
@@ -251,7 +254,10 @@ class RAGManager:
             context = "\n".join([item["text"] for item in relevant_knowledge])
             
             # Generate response using LLM with retrieved context
-            client = openai.AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
+            client = openai.AsyncOpenAI(
+                api_key=self.config.OPENAI_API_KEY,
+                timeout=15.0  # 15 second timeout for RAG responses
+            )
             
             # Use standardized prompts from AgentPrompts
             prompts = AgentPrompts.get_rag_qa_prompt(context, query)
@@ -262,7 +268,7 @@ class RAGManager:
                     {"role": "system", "content": prompts["system"]},
                     {"role": "user", "content": prompts["user"]}
                 ],
-                max_tokens=500,
+                max_tokens=400,  # Reduced for faster response
                 temperature=0.7
             )
             

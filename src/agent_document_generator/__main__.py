@@ -10,7 +10,7 @@ from src.agent_document_generator.config import Config
 
 
 def create_agent_skills():
-    """Create the 5 main agent skills."""
+    """Create the 6 main agent skills."""
     skills = []
     
     # Skill 1: HTML Document Generation
@@ -78,7 +78,20 @@ def create_agent_skills():
         ],
     )
     
-    skills.extend([html_skill, markdown_skill, url_qa_skill, rag_qa_skill, web_search_skill])
+    # Skill 6: General Q&A
+    general_qa_skill = AgentSkill(
+        id='general_qa',
+        name='일반 질의응답',
+        description='일반적인 질문이나 대화에 자연스럽고 친근하게 응답합니다',
+        tags=['general', 'qa', 'conversation'],
+        examples=[
+            '안녕하세요',
+            '오늘 날씨 어때?',
+            '간단한 질문이 있어요'
+        ],
+    )
+    
+    skills.extend([html_skill, markdown_skill, url_qa_skill, rag_qa_skill, web_search_skill, general_qa_skill])
     
     return skills
 
@@ -87,13 +100,13 @@ def create_app():
     """Creates and configures the A2AStarletteApplication instance."""
     config = Config()
 
-    # Create the 5 main agent skills
+    # Create the 6 main agent skills
     all_skills = create_agent_skills()
 
     # Create agent card
     agent_card = AgentCard(
         name='Document Generator Agent',
-        description='5가지 주요 기능을 제공하는 AI 에이전트: HTML/Markdown 문서 생성, URL 기반 질의응답, 에이전트 정보 질의응답(RAG), 웹 검색',
+        description='6가지 주요 기능을 제공하는 AI 에이전트: HTML/Markdown 문서 생성, URL 기반 질의응답, 에이전트 정보 질의응답(RAG), 웹 검색, 일반 질의응답',
         url=f'https://agent-document-generator.vercel.app/',
         version='2.0.0',
         default_input_modes=['text', 'text/plain'],

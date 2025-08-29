@@ -1,189 +1,276 @@
 # Document Generator Agent
 
-A2A Protocol Sub Agent Server for generating HTML/Markdown documents from user queries using LLM and MCP servers.
+An AI agent for HTML/Markdown document generation and multi-functional Q&A using A2A Protocol.
 
 ## Overview
 
-이 프로젝트는 사용자가 질문하면 에이전트가 실시간 응답하고, HTML·Markdown 페이지를 자동 생성해 정보를 제공하는 마이크로서비스 아키텍처 시스템의 일부입니다. 이 특정 에이전트(3.1 Sub Agent Server)는 A2A SDK를 사용하여 실제 문서 생성을 담당합니다.
+This project is an AI agent that provides real-time responses to various user requests, offering document generation, web search, and Q&A services. It leverages the A2A protocol and MCP servers to provide 6 core functionalities.
 
-## Features
+## Key Features
 
-- **A2A SDK 기반**: Google의 공식 A2A Python SDK 사용
-- **MCP 서버 통합**: 문서 처리를 위한 다중 MCP 서버 사용:
-  - `mcp-pandoc`: 문서 변환 및 생성
-  - `mcp-filesystem`: 파일 시스템 작업
-  - `markdownify`: HTML을 Markdown으로 변환
-- **LLM 기반 생성**: OpenAI GPT 모델을 사용한 포괄적인 문서 생성
-- **다중 출력 형식**: HTML 및 Markdown 출력 형식 지원
-- **자동 파일 저장**: 생성된 문서는 타임스탬프와 함께 자동 저장
+### 6 Core Skills
 
-## Architecture
+1. **HTML Document Generation** 
+   - Generate structured HTML documents based on user requests
+   - Complete HTML5 structure with CSS styling included
+   - Support for various formats: web pages, reports, guide documents
+
+2. **Markdown Document Generation**
+   - Generate clean and readable markdown documents
+   - Optimized for technical documentation, manuals, and blog posts
+   - Systematic structure with rich content
+
+3. **URL-based Q&A**
+   - Analyze provided URL content to answer questions
+   - Website content summarization and information extraction
+   - Integration with MCP content-summarizer server
+
+4. **Agent Information Q&A (RAG)**
+   - Detailed answers about the agent's own functions and capabilities
+   - Knowledge search through Milvus vector database
+   - Customized information provision based on user questions
+
+5. **Web Search**
+   - Latest information search and trend analysis
+   - Real-time web search result organization and summarization
+   - Integration with MCP webresearch server
+
+6. **General Q&A**
+   - Natural responses to everyday questions and conversations
+   - Support for greetings, simple questions, and interactive conversations
+   - Maintain friendly and professional tone
+
+### Technical Features
+
+- **A2A Protocol**: Utilizes Google's official A2A Python SDK
+- **MCP Server Integration**: External service integration through Model Context Protocol
+- **LLM-based**: Intelligent response generation using OpenAI GPT models
+- **Vector Database**: RAG system using Milvus (optional)
+- **Real-time Processing**: Performance optimization for fast responses
+- **Skill-based Routing**: Automatic analysis of question types for optimal function routing
+
+## System Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Host Agent    │───▶│ Document Gen     │───▶│   MCP Servers   │
-│   (A2A SDK)     │    │ Agent (A2A SDK)  │    │   (pandoc, fs)  │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                               │
-                               ▼
+│   (A2A SDK)     │    │   Agent (A2A)    │    │                 │
+└─────────────────┘    └──────────────────┘    │ • content-      │
+                               │                │   summarizer    │
+                               │                │ • webresearch   │
+                               ▼                └─────────────────┘
                        ┌──────────────────┐
-                       │   Generated      │
-                       │   Documents      │
-                       │   (HTML/MD)      │
-                       └──────────────────┘
+                       │  Generated Docs  │    ┌─────────────────┐
+                       │  HTML/MD Files   │───▶│  Milvus Vector  │
+                       │  Response Data   │    │ Database (Opt.) │
+                       └──────────────────┘    └─────────────────┘
 ```
 
-## Installation
+## Installation and Setup
 
-### Prerequisites
+### System Requirements
 
 - Python 3.10+
-- Node.js (markdownify MCP 서버용)
+- Node.js (for MCP servers)
 - UV package manager
 - OpenAI API key
 
-### Setup
+### Installation Process
 
-1. **프로젝트 클론 및 이동**:
+1. **Clone Repository and Navigate**
 ```bash
 git clone <repository-url>
 cd agent-document-generator
 ```
 
-2. **Python 의존성 설치**:
+2. **Install Python Dependencies**
 ```bash
 uv sync
 ```
 
-3. **MCP 서버용 Node.js 의존성 설치**:
+3. **Install Node.js Dependencies**
 ```bash
 npm install
 ```
 
-4. **환경 설정**:
+4. **Create Environment Configuration File**
 ```bash
 cp .env.example .env
-# .env 파일을 편집하여 설정
 ```
 
-5. **필수 환경 변수**:
+5. **Configure Environment Variables**
 ```env
-# A2A Protocol 설정
+# A2A Protocol Configuration
 A2A_AGENT_ID=agent-document-generator
 A2A_HOST_URL=http://localhost:8000
 A2A_API_KEY=your-api-key-here
 
-# LLM 설정  
-OPENAI_API_KEY=your-openai-api-key
+# LLM Configuration  
+OPENAI_API_KEY=your-openai-api-key-here
 MODEL_NAME=gpt-4-turbo-preview
 
-# 서버 설정
+# Server Configuration
 HOST=0.0.0.0
-PORT=8001
+PORT=8002
+DEBUG=false
+
+# Output Directory Configuration
+OUTPUT_DIR=./output
+DEFAULT_FORMAT=html
+
+# Vector Database Configuration (Optional)
+VECTOR_DB_URL=http://localhost:19530
+VECTOR_DB_COLLECTION_NAME=agent_knowledge
 ```
 
 ## Usage
 
-### 에이전트 시작
+### Running the Agent
 
 ```bash
-# UV 사용
+# Using UV
 uv run python -m src.agent_document_generator
 
-# 또는 npm script 사용
-npm run start
+# Or using npm script
+npm start
 ```
 
-### A2A 통신
+### A2A Protocol Communication
 
-이 에이전트는 A2A SDK를 사용하여 통신합니다:
+#### Message Formats
 
-#### 메시지 형식
-
-**JSON 형식 (상세 설정)**:
+**JSON Format (Detailed Configuration)**:
 ```json
 {
-  "question": "양자 컴퓨팅에 대해 설명해주세요",
+  "question": "Please generate an HTML document about quantum computing",
   "format": "html",
-  "context": {},
-  "metadata": {}
+  "context": {
+    "topic": "quantum_computing",
+    "level": "intermediate"
+  },
+  "metadata": {
+    "author": "user",
+    "timestamp": "2024-01-01T12:00:00Z"
+  }
 }
 ```
 
-**단순 텍스트**:
-```
-"머신러닝이란 무엇인가요?"
-```
-
-#### 테스트 클라이언트
-
-```bash
-# 테스트 클라이언트 실행
-uv run python test_client.py
-
-# 또는
-npm run test
+**Simple Text Format**:
+```text
+"What is machine learning?"
 ```
 
-## MCP 서버 설정
+#### Usage Examples by Skill
 
-에이전트는 `mcpserver.json`에서 설정된 여러 MCP 서버를 사용합니다:
+1. **HTML Document Generation**
+   - "Create an HTML document for a Python basics guide"
+   - "Generate an HTML page about quantum computing"
+
+2. **Markdown Document Generation**
+   - "Write API documentation in markdown format"
+   - "Generate a React tutorial as an md file"
+
+3. **URL-based Q&A**
+   - "What is the main content of this site: https://example.com?"
+   - "Please summarize important information from this URL: https://news.example.com"
+
+4. **Agent Information Q&A**
+   - "What features do you have available?"
+   - "What can you do?"
+
+5. **Web Search**
+   - "Search for AI trends in 2024"
+   - "Find information about the latest Python version"
+
+6. **General Q&A**
+   - "Hello"
+   - "How's the weather today?"
+
+### MCP Server Configuration
+
+Configure MCP servers in the `mcpserver.json` file:
 
 ```json
 {
   "mcpServers": {
-    "mcp-pandoc": {
-      "command": "uvx",
-      "args": ["mcp-pandoc"],
-      "description": "문서 변환 및 생성"
-    },
-    "mcp-filesystem": {
-      "command": "uvx", 
-      "args": ["mcp-filesystem", "--directory", "./output"],
-      "description": "파일 시스템 접근"
-    },
-    "markdownify": {
+    "content-summarizer": {
       "command": "node",
-      "args": ["./node_modules/markdownify-mcp/dist/index.js"],
-      "description": "HTML을 Markdown으로 변환"
+      "args": [
+        "C:/Users/donghwi/PycharmProjects/mcp-summarizer/dist/index.js"
+      ]
+    },
+    "webresearch": {
+      "command": "npx",
+      "args": ["-y", "@mzxrai/mcp-webresearch@latest"]
     }
   }
 }
 ```
 
-## A2A 메시지 처리
+## Response Formats
 
-### 지원하는 기능
-
-1. **HTML 문서 생성**: 질문을 기반으로 HTML 문서 생성
-2. **Markdown 문서 생성**: 질문을 기반으로 Markdown 문서 생성  
-3. **자동 파일 저장**: 생성된 문서를 타임스탬프와 함께 저장
-
-### 응답 예시
+### Document Generation Skills Response (HTML/Markdown)
 
 ```json
 {
-  "status": "success",
-  "content": "<html>...</html>",
-  "format": "html",
-  "title": "Generated Document",
-  "file_path": "./output/20240101_120000_Generated_Document.html",
-  "metadata": {
-    "generated_at": "2024-01-01T12:00:00Z",
-    "model": "gpt-4-turbo-preview"
+  "text": "[HTML Document Generation Complete]\n\nTitle: Generated Document Title\nSaved to: ./output/file.html\nGenerated at: 2024-01-01T12:00:00Z",
+  "part": {
+    "root": {
+      "file": {
+        "bytes": "base64-encoded-content",
+        "mime_type": "text/html",
+        "name": "Document_Title.html"
+      },
+      "metadata": {
+        "original_title": "Document Title",
+        "generated_at": "2024-01-01T12:00:00Z",
+        "format": "html"
+      }
+    }
+  },
+  "response": {
+    "content": "Complete content of generated document",
+    "format": "html",
+    "title": "Document Title",
+    "file_path": "./output/file.html",
+    "metadata": {
+      "generated_at": "2024-01-01T12:00:00Z",
+      "model": "gpt-4-turbo-preview"
+    }
   }
 }
 ```
 
-## Output
+### Q&A Skills Response (URL QA, RAG QA, Web Search, General QA)
 
-Generated documents are saved in the `./output` directory with the following naming pattern:
+```text
+"[Web Search Results]
+
+🔍 Search Query: Latest Python Version
+📊 Search Results: 5 items
+
+[1] Python 3.12 Released
+🔗 https://www.python.org/downloads/
+📝 New features and improvements in Python 3.12...
+
+---
+※ These are the latest web search results. Please refer to the links for more detailed information."
+```
+
+## Output Files
+
+Generated documents are saved in the `./output` directory with the following naming convention:
+
 ```
 YYYYMMDD_HHMMSS_Document_Title.html
 YYYYMMDD_HHMMSS_Document_Title.md
 ```
 
-## Development
+Examples:
+- `20240101_120000_Python_Guide.html`
+- `20240101_120000_API_Documentation.md`
+
+## Development Information
 
 ### Project Structure
 
@@ -191,53 +278,102 @@ YYYYMMDD_HHMMSS_Document_Title.md
 agent-document-generator/
 ├── src/agent_document_generator/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI application
-│   ├── models.py            # Pydantic models
-│   ├── config.py            # Configuration management
-│   ├── document_generator.py # Core document generation
-│   ├── mcp_manager.py       # MCP server management
-│   └── a2a_protocol.py      # A2A protocol handler
-├── mcpserver.json           # MCP server configuration
+│   ├── __main__.py              # Main application
+│   ├── agent_executor.py        # Agent execution logic
+│   ├── skill_classifier.py      # Skill classification system
+│   ├── skill_handlers.py        # Individual skill handlers
+│   ├── document_generator.py    # Document generation engine
+│   ├── rag_manager.py          # RAG system management
+│   ├── mcp_manager.py          # MCP server management
+│   ├── prompts.py              # Centralized prompt management
+│   ├── models.py               # Data models
+│   └── config.py               # Configuration management
+├── test/
+│   ├── integration_test.py      # Integration tests
+│   └── test_skill_classifier.py # Skill classification tests
 ├── .well-known/
-│   └── agent-card.json      # Agent card for A2A discovery
-├── output/                  # Generated documents
-├── pyproject.toml           # Python project configuration
-├── package.json             # Node.js dependencies
-├── .env.example             # Environment template
-└── README.md
+│   └── agent-card.json          # A2A agent card
+├── output/                      # Generated document storage
+├── mcpserver.json              # MCP server configuration
+├── pyproject.toml              # Python project configuration
+├── package.json                # Node.js dependencies
+├── .env.example                # Environment variable template
+└── README.md                   # This file
 ```
 
 ### Running Tests
 
 ```bash
-# Install test dependencies
+# Install development dependencies
 uv sync --dev
 
-# Run tests
-uv run pytest
+# Run integration tests
+python test\integration_test.py
+
+# Run skill classification tests
+python -m pytest test\test_skill_classifier.py
 ```
 
-## Integration
+### Performance Optimization
 
-This agent is designed to work with:
+- **Cache System**: Improved response speed through classification result caching
+- **Parallel Processing**: Concurrent execution of initialization tasks
+- **Timeout Settings**: Appropriate timeouts applied to all API calls
+- **Token Limits**: Optimized token usage for LLM calls
+
+### API Endpoints
+
+- `GET /`: Status check
+- `GET /.well-known/agent.json`: Agent information (prettified JSON)
+- `POST /`: A2A protocol message processing
+
+## Integration and Connectivity
+
+This agent operates in integration with the following systems:
 
 1. **Web Page Server** - GitHub Pages static website (Public)
 2. **Proxy Server** - FastAPI-based middleware (Private)
-3. **Host Agent Server** - Agent hosting server with A2A Protocol (Public)
-4. **MCP Server** - Model Context Protocol server (Public)
+3. **Host Agent Server** - A2A protocol agent hosting server (Public)
+4. **MCP Servers** - Model Context Protocol servers (Public)
+5. **Milvus Vector DB** - Vector database for RAG system (Optional)
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Timeout Errors**
+   - Check OpenAI API key
+   - Verify network connection status
+   - Adjust timeout settings
+
+2. **MCP Server Connection Failures**
+   - Check `mcpserver.json` configuration
+   - Verify Node.js dependency installation
+   - Validate server paths and commands
+
+3. **Milvus Connection Errors**
+   - Check `VECTOR_DB_URL` configuration
+   - Verify Milvus server running status
+   - Check network access permissions
+
+### Log Checking
+
+```bash
+# Run with detailed logging
+DEBUG=true uv run python -m src.agent_document_generator
+```
 
 ## License
 
 MIT License
 
-## Contributing
+## Version Information
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+- **Current Version**: 2.0.0
+- **A2A SDK Version**: Latest
+- **Supported Python Version**: 3.10+
+- **Last Updated**: December 2024
 
-## Support
+---
 
-For issues and questions, please create an issue in the GitHub repository.
+*For Korean documentation, please refer to `README.ko.md`.*

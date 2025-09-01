@@ -130,7 +130,7 @@ def create_app():
     )
     app = server.build()
 
-    @app.route("/")
+    @app.route("/health", method=["GET"])
     async def root(request):
         return {"status": "ok"}
 

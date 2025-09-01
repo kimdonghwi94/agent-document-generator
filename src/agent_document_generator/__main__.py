@@ -4,8 +4,8 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
-from starlette.responses import JSONResponse
-
+import httpx
+from starlette.responses import Response, JSONResponse
 from src.agent_document_generator.agent_executor import DocumentGeneratorAgentExecutor
 from src.agent_document_generator.config import Config
 
@@ -134,6 +134,37 @@ def create_app():
     @app.route("/health")
     async def health(request):
         return JSONResponse({"status": "healthy"})
+
+    @app.route("/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
+    async def proxy_to_gh(request):
+        # A) 예외: A2A/내부 경로는 프록시하지 않음 (이미 A2A 라우트가 매칭되면 여기 안 옵니다)
+        #    만약 다른 내부 경로를 더 제외하고 싶으면 아래 조건을 추가하세요.
+        GH_BASE = "https://kimdonghwi94.github.io/dhkim"
+        raw_path = request.url.path
+        if raw_path.startswith("/.well-known") or raw_path.startswith("/api") or raw_path == "/health":
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+
+        # B) 업스트림 URL 구성
+        upstream = GH_BASE + (raw_path if raw_path else "/")
+        if request.url.query:
+            upstream += f"?{request.url.query}"
+
+        # C) 메서드/바디/헤더 전달
+        method = request.method.upper()
+        body = await request.body()
+        headers = {k: v for k, v in request.headers.items()
+                   if k.lower() not in {"host", "content-length", "connection"}}
+
+        async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+            resp = await client.request(method, upstream, content=body, headers=headers)
+
+        # D) 응답 헤더 정제 및 리턴
+        passthrough = {k: v for k, v in resp.headers.items()
+                       if k.lower() not in {"content-encoding", "transfer-encoding", "connection"}}
+        return Response(content=resp.content,
+                        status_code=resp.status_code,
+                        headers=passthrough,
+                        media_type=resp.headers.get("content-type"))
 
     return app
 

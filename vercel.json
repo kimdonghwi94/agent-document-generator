@@ -1,13 +1,15 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/.well-known/agent.json", "destination": "/api/app" },
-    { "source": "/health", "destination": "/api/app" },
-
-    { "source": "/", "destination": "https://kimdonghwi94.github.io/dhkim/" },
+  "builds": [
     {
-      "source": "/:path((?!\\.well-known|api|health).*)",
-      "destination": "https://kimdonghwi94.github.io/dhkim/:path"
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
     }
   ],
   "env": {

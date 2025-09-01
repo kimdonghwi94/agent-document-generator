@@ -1,15 +1,18 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "main.py",
-      "use": "@vercel/python"
-    }
+    { "src": "main.py", "use": "@vercel/python" }
   ],
   "routes": [
+    { "src": "/\\.well-known/agent\\.json", "dest": "main.py" },
+    { "src": "/health", "dest": "main.py" },
+    { "src": "/api/(.*)", "dest": "main.py" }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "https://kimdonghwi94.github.io/dhkim/" },
     {
-      "src": "/(.*)",
-      "dest": "main.py"
+      "source": "/:path((?!\\.well-known|api|health).*)",
+      "destination": "https://kimdonghwi94.github.io/dhkim/:path"
     }
   ],
   "env": {

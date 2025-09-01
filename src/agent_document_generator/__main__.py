@@ -5,7 +5,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 import httpx
-from starlette.responses import Response, JSONResponse
+from starlette.responses import RedirectResponse
 from src.agent_document_generator.agent_executor import DocumentGeneratorAgentExecutor
 from src.agent_document_generator.config import Config
 
@@ -135,43 +135,9 @@ def create_app():
     async def health(request):
         return JSONResponse({"status": "healthy"})
 
-    @app.route("/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
-    async def proxy_to_gh(request):
-        GH_ORIGIN = "https://kimdonghwi94.github.io"
-        REPO_BASE = "/dhkim"
-        raw_path = request.url.path  # 예: "/", "/dhkim/assets/app.js", "/favicon.ico", ...
-
-        # 1) A2A/내부 엔드포인트는 프록시 제외(이미 다른 라우트로 처리)
-        if raw_path.startswith("/.well-known") or raw_path.startswith("/api") or raw_path == "/health":
-            return JSONResponse({"detail": "Not Found"}, status_code=404)
-
-        # 2) 업스트림 URL 구성
-        if raw_path == "/":
-            upstream = GH_ORIGIN + REPO_BASE + "/"
-        else:
-            upstream = GH_ORIGIN + raw_path  # <- 핵심: /dhkim/... 이 오면 그대로 붙여줌
-
-        if request.url.query:
-            upstream += f"?{request.url.query}"
-
-        # 3) 요청 전달
-        method = request.method.upper()
-        body = await request.body()
-        headers = {k: v for k, v in request.headers.items()
-                   if k.lower() not in {"host", "content-length", "connection"}}
-
-        async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
-            resp = await client.request(method, upstream, content=body, headers=headers)
-
-        passthrough = {k: v for k, v in resp.headers.items()
-                       if k.lower() not in {"content-encoding", "transfer-encoding", "connection"}}
-
-        return Response(
-            content=resp.content,
-            status_code=resp.status_code,
-            headers=passthrough,
-            media_type=resp.headers.get("content-type")
-        )
+    @app.route("/", methods=["GET"])
+    async def root(request):
+        return RedirectResponse(url="https://kimdonghwi94.github.io/dhkim", status_code=302)
 
     return app
 

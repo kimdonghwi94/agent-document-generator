@@ -4,6 +4,7 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
+from starlette.responses import JSONResponse
 
 from src.agent_document_generator.agent_executor import DocumentGeneratorAgentExecutor
 from src.agent_document_generator.config import Config
@@ -130,9 +131,9 @@ def create_app():
     )
     app = server.build()
 
-    @app.route("/health", method=["GET"])
-    async def root(request):
-        return {"status": "ok"}
+    @app.route("/health")
+    async def health(request):
+        return JSONResponse({"status": "healthy"})
 
     return app
 

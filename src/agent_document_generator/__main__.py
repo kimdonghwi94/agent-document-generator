@@ -5,7 +5,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 import httpx
-from starlette.responses import RedirectResponse
+from starlette.responses import Response, JSONResponse, RedirectResponse
 from src.agent_document_generator.agent_executor import DocumentGeneratorAgentExecutor
 from src.agent_document_generator.config import Config
 

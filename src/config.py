@@ -11,6 +11,9 @@ load_dotenv()
 
 class Config:
     """Application configuration."""
+    SMITHERY_BASE_URL: str = os.getenv("SMITHERY_BASE_URL")
+    SMITHERY_API_KEY: str = os.getenv("SMITHERY_API_KEY")
+    SMITHERY_PROFILE: str = os.getenv("SMITHERY_PROFILE")
 
     # A2A Protocol Configuration
     A2A_AGENT_ID: str = os.getenv("A2A_AGENT_ID", "agent-document-generator")

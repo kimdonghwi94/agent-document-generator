@@ -8,10 +8,14 @@ import logging
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urlencode
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.types import Tool
+from mcp.client.streamable_http import streamablehttp_client
+from src.config import Config
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,56 +32,37 @@ class PersistentMCPClient:
     
     async def initialize_from_config(self) -> Dict[str, List[Tool]]:
         """mcpserver.json에서 모든 서버를 초기화하고 도구들을 로드"""
-        config_path = Path(__file__).parent.parent.parent / "mcpserver.json"
-        
-        if not config_path.exists():
-            logger.warning(f"MCP 설정 파일을 찾을 수 없음: {config_path}")
-            return {}
-        
-        try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-        except Exception as e:
-            logger.error(f"MCP 설정 파일 읽기 실패: {e}")
-            return {}
-        
-        servers = config.get("mcpServers", {})
+
+        config = Config()
+        url = config.SMITHERY_BASE_URL
+        profile = config.SMITHERY_PROFILE
+        api_key = config.SMITHERY_API_KEY
+        server_name = "Web Analyzer MCP"
+
         all_tools = {}
-        
-        for server_name, server_config in servers.items():
-            try:
-                tools = await self._initialize_server(server_name, server_config)
-                if tools:
-                    all_tools[server_name] = tools
-                    logger.info(f"MCP 서버 '{server_name}' 초기화 완료: {len(tools)}개 도구")
-            except Exception as e:
-                logger.error(f"MCP 서버 '{server_name}' 초기화 실패: {e}")
+        try:
+            tools = await self._initialize_server(url, api_key, profile)
+            if tools:
+                all_tools[server_name] = tools
+                logger.info(f"MCP 서버 '{server_name}' 초기화 완료: {len(tools)}개 도구")
+        except Exception as e:
+            logger.error(f"MCP 서버 '{server_name}' 초기화 실패: {e}")
         
         self._initialized = True
         return all_tools
     
-    async def _initialize_server(self, server_name: str, server_config: Dict[str, Any]) -> List[Tool]:
+    async def _initialize_server(self, base_url: str, api_key: str, profile: str) -> List[Tool]:
         """개별 MCP 서버 초기화 및 persistent session 생성"""
-        command = server_config.get("command")
-        args = server_config.get("args", [])
-        
-        if not command:
-            logger.warning(f"서버 '{server_name}'에 명령어가 없음")
-            return []
-        
+        server_name = "Web Analyzer MCP"
+
         try:
             # StdioServerParameters 생성 - 환경변수 포함
-            env = server_config.get("env", {})
-            params = StdioServerParameters(
-                command=command,
-                args=args,
-                env=env if env else None
-            )
-            
-            logger.info(f"서버 '{server_name}' 연결 시도 중...")
-            
+
+            base_url = base_url
+            params = {"api_key": api_key, "profile": profile}
+            url = f"{base_url}?{urlencode(params)}"
             # 백그라운드 태스크로 MCP 서버 관리 - 독립적인 컨텍스트에서 실행
-            task = asyncio.create_task(self._run_persistent_mcp_server(params, server_name))
+            task = asyncio.create_task(self._run_persistent_mcp_server(url))
             self._background_tasks[server_name] = task
             
             # 초기화 완료 대기 (최대 10초)
@@ -95,16 +80,14 @@ class PersistentMCPClient:
             await self._cleanup_server_task(server_name)
             return []
     
-    async def _run_persistent_mcp_server(self, params: StdioServerParameters, server_name: str):
+    async def _run_persistent_mcp_server(self, url):
         """독립적인 컨텍스트에서 MCP 서버를 영구적으로 실행"""
         try:
-            # 정상적인 async with 패턴 사용 - 컨텍스트 매니저가 같은 태스크에서 관리됨
-            async with stdio_client(params) as (read, write):
+            async with streamablehttp_client(url) as (read, write, _):
                 async with ClientSession(read, write) as session:
-                    # 초기화 대기
                     await asyncio.sleep(0.5)
-                    await session.initialize()
-                    
+                    rest = await session.initialize()
+                    server_name = rest.serverInfo.name
                     # 도구 목록 가져오기
                     tool_list = await session.list_tools()
                     tools = list(tool_list.tools)

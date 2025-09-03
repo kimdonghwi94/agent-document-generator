@@ -5,9 +5,8 @@ import json
 import logging
 import os
 from typing import Dict, List, Any, AsyncGenerator, Optional
-import google.generativeai as genai
 
-# from google import genai
+from google import genai
 # from mcp import ClientSession, StdioServerParameters
 # from mcp.client.stdio import stdio_client
 

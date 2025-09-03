@@ -1,69 +1,73 @@
-# Document Generator Agent
+# Advanced Document Generator Agent
 
-An AI agent for HTML/Markdown document generation and multi-functional Q&A using A2A Protocol.
+An intelligent AI agent powered by ReAct architecture for document generation, web research, and conversational AI using A2A Protocol and MCP integration.
 
 ## Overview
 
-This project is an AI agent that provides real-time responses to various user requests, offering document generation, web search, and Q&A services. It leverages the A2A protocol and MCP servers to provide 6 core functionalities.
+This project is an advanced AI agent that leverages the ReAct (Reasoning and Acting) pattern to intelligently process user requests. It provides intelligent document generation, real-time web research, and conversational AI services through seamless integration with A2A protocol and MCP (Model Control Protocol) servers. The agent dynamically selects appropriate tools and combines multiple capabilities to deliver comprehensive responses.
 
 ## Key Features
 
-### 6 Core Skills
+### 🤖 ReAct Architecture
+- **Reasoning and Acting**: The agent analyzes user requests and dynamically selects appropriate tools
+- **Multi-step Processing**: Handles complex tasks through iterative thinking and tool execution
+- **Context Awareness**: Maintains conversation history and builds upon previous interactions
+- **Intelligent Tool Selection**: Automatically chooses optimal tools for each task
 
-1. **HTML Document Generation** 
-   - Generate structured HTML documents based on user requests
-   - Complete HTML5 structure with CSS styling included
-   - Support for various formats: web pages, reports, guide documents
+### 4 Core Skills
 
-2. **Markdown Document Generation**
-   - Generate clean and readable markdown documents
-   - Optimized for technical documentation, manuals, and blog posts
-   - Systematic structure with rich content
+1. **📝 Document Generation** 
+   - Generate structured HTML and Markdown documents based on user requests
+   - Complete HTML5 structure with modern CSS styling
+   - Support for various formats: web pages, technical documentation, reports, guides
+   - Automatic file saving with timestamp-based naming
 
-3. **URL-based Q&A**
-   - Analyze provided URL content to answer questions
-   - Website content summarization and information extraction
-   - Integration with MCP content-summarizer server
+2. **🔍 Web Research & Summary**
+   - Real-time web search through MCP webresearch server integration
+   - URL content analysis and summarization via MCP content-summarizer
+   - Intelligent fallback to direct OpenAI processing when MCP unavailable
+   - Comprehensive information gathering and synthesis
 
-4. **Agent Information Q&A (RAG)**
-   - Detailed answers about the agent's own functions and capabilities
-   - Knowledge search through Milvus vector database
-   - Customized information provision based on user questions
+3. **💬 Intelligent Q&A**
+   - Context-aware conversational responses using ReAct pattern
+   - RAG (Retrieval-Augmented Generation) system for agent knowledge
+   - Natural language understanding for diverse query types
+   - Maintains conversation flow and builds on previous context
 
-5. **Web Search**
-   - Latest information search and trend analysis
-   - Real-time web search result organization and summarization
-   - Integration with MCP webresearch server
+4. **🔧 MCP Tool Integration**
+   - Dynamic MCP server discovery and tool enumeration  
+   - Automatic server health checking and capability validation
+   - Seamless integration with external services and APIs
+   - Fault-tolerant operation with graceful degradation
 
-6. **General Q&A**
-   - Natural responses to everyday questions and conversations
-   - Support for greetings, simple questions, and interactive conversations
-   - Maintain friendly and professional tone
+### 🔧 Technical Features
 
-### Technical Features
-
-- **A2A Protocol**: Utilizes Google's official A2A Python SDK
-- **MCP Server Integration**: External service integration through Model Context Protocol
-- **LLM-based**: Intelligent response generation using OpenAI GPT models
-- **Vector Database**: RAG system using Milvus (optional)
-- **Real-time Processing**: Performance optimization for fast responses
-- **Skill-based Routing**: Automatic analysis of question types for optimal function routing
+- **A2A Protocol**: Built on Google's official A2A Python SDK with streaming support and JSON-RPC communication
+- **ReAct Pattern**: Implements Reasoning and Acting for intelligent multi-step decision making
+- **MCP Integration**: Dynamic Model Control Protocol server discovery, health checking, and tool enumeration
+- **LLM-Powered**: Advanced response generation using OpenAI GPT models with context-aware processing
+- **Context Management**: Sophisticated conversation history preservation with structured ConversationContext models
+- **Tool Result Preservation**: Complete tool execution results (4000+ chars) stored to prevent redundant operations
+- **Fault Tolerance**: Graceful MCP server degradation with OpenAI fallback when external services unavailable
+- **Performance Optimized**: Efficient processing with proper timeout handling, error recovery, and dynamic tool selection
 
 ## System Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Host Agent    │───▶│ Document Gen     │───▶│   MCP Servers   │
-│   (A2A SDK)     │    │   Agent (A2A)    │    │                 │
+│   Host Agent    │───▶│ ReAct Agent      │───▶│   MCP Servers   │
+│   (A2A SDK)     │    │ (Dynamic Tools)  │    │                 │
 └─────────────────┘    └──────────────────┘    │ • content-      │
                                │                │   summarizer    │
                                │                │ • webresearch   │
-                               ▼                └─────────────────┘
-                       ┌──────────────────┐
-                       │  Generated Docs  │    ┌─────────────────┐
-                       │  HTML/MD Files   │───▶│  Milvus Vector  │
-                       │  Response Data   │    │ Database (Opt.) │
-                       └──────────────────┘    └─────────────────┘
+                               ▼                │ • Custom Tools  │
+                       ┌──────────────────┐    └─────────────────┘
+                       │ ConversationCtx  │           │
+                       │ Tool Results     │◄──────────┘
+                       │ Generated Docs   │    ┌─────────────────┐
+                       │ Response Data    │───▶│ OpenAI GPT-4    │
+                       └──────────────────┘    │ (Fallback LLM)  │
+                                               └─────────────────┘
 ```
 
 ## Installation and Setup
@@ -160,52 +164,54 @@ npm start
 "What is machine learning?"
 ```
 
-#### Usage Examples by Skill
+#### Usage Examples by Core Skills
 
-1. **HTML Document Generation**
+1. **📝 Document Generation**
    - "Create an HTML document for a Python basics guide"
-   - "Generate an HTML page about quantum computing"
+   - "Generate a comprehensive React tutorial in markdown"
+   - "Write technical documentation about quantum computing"
 
-2. **Markdown Document Generation**
-   - "Write API documentation in markdown format"
-   - "Generate a React tutorial as an md file"
+2. **🔍 Web Research & Summary**
+   - "Search for the latest AI developments in 2024"
+   - "Summarize this article: https://example.com/ai-news"
+   - "Find and analyze recent Python release information"
 
-3. **URL-based Q&A**
-   - "What is the main content of this site: https://example.com?"
-   - "Please summarize important information from this URL: https://news.example.com"
+3. **💬 Intelligent Q&A**
+   - "Explain your capabilities and available tools"
+   - "Walk me through a complex multi-step analysis"
+   - "What's the best approach for implementing ReAct pattern?"
 
-4. **Agent Information Q&A**
-   - "What features do you have available?"
-   - "What can you do?"
-
-5. **Web Search**
-   - "Search for AI trends in 2024"
-   - "Find information about the latest Python version"
-
-6. **General Q&A**
-   - "Hello"
-   - "How's the weather today?"
+4. **🔧 MCP Tool Integration**
+   - "Use web research tools to find current tech trends"
+   - "Analyze this URL content using MCP summarization"
+   - "Demonstrate available MCP server capabilities"
 
 ### MCP Server Configuration
 
-Configure MCP servers in the `mcpserver.json` file:
+The system automatically discovers and integrates MCP servers configured in `mcpserver.json`:
 
 ```json
 {
   "mcpServers": {
     "content-summarizer": {
       "command": "node",
-      "args": [
-        "C:/Users/donghwi/PycharmProjects/mcp-summarizer/dist/index.js"
-      ]
+      "args": ["path/to/mcp-summarizer/dist/index.js"],
+      "description": "Text summarization using Gemini models"
     },
     "webresearch": {
       "command": "npx",
-      "args": ["-y", "@mzxrai/mcp-webresearch@latest"]
+      "args": ["-y", "@mzxrai/mcp-webresearch@latest"],
+      "description": "Real-time web search and content retrieval"
     }
   }
 }
 ```
+
+**Key Features:**
+- **Dynamic Discovery**: Servers are automatically discovered and health-checked on startup
+- **Graceful Degradation**: System continues to operate even if some MCP servers fail
+- **Tool Enumeration**: Available tools are automatically discovered from running servers
+- **Cross-Platform Support**: Enhanced Windows support with proper PATH resolution
 
 ## Response Formats
 
@@ -241,20 +247,26 @@ Configure MCP servers in the `mcpserver.json` file:
 }
 ```
 
-### Q&A Skills Response (URL QA, RAG QA, Web Search, General QA)
+### ReAct Pattern Response (Intelligent Q&A)
 
 ```text
-"[Web Search Results]
+"[ReAct Agent Analysis]
 
-🔍 Search Query: Latest Python Version
-📊 Search Results: 5 items
+🤔 Reasoning: User is asking about Python version updates. I need to search for the latest information.
 
-[1] Python 3.12 Released
+🔧 Action: Using web research MCP tool to find current Python releases...
+
+🔍 Search Results: Latest Python Version
+📊 Found: 5 relevant sources
+
+[1] Python 3.12 Released - December 2024
 🔗 https://www.python.org/downloads/
-📝 New features and improvements in Python 3.12...
+📝 Key features: improved error messages, performance optimizations...
+
+💡 Analysis: Based on the search results, Python 3.12 is the latest stable release with significant improvements in performance and developer experience.
 
 ---
-※ These are the latest web search results. Please refer to the links for more detailed information."
+※ Response generated using ReAct pattern with real-time web research."
 ```
 
 ## Output Files
@@ -278,27 +290,25 @@ Examples:
 agent-document-generator/
 ├── src/agent_document_generator/
 │   ├── __init__.py
-│   ├── __main__.py              # Main application
-│   ├── agent_executor.py        # Agent execution logic
-│   ├── skill_classifier.py      # Skill classification system
-│   ├── skill_handlers.py        # Individual skill handlers
-│   ├── document_generator.py    # Document generation engine
-│   ├── rag_manager.py          # RAG system management
-│   ├── mcp_manager.py          # MCP server management
-│   ├── prompts.py              # Centralized prompt management
-│   ├── models.py               # Data models
-│   └── config.py               # Configuration management
+│   ├── __main__.py              # A2A server & agent skills
+│   ├── agent_executor.py        # Agent execution orchestration
+│   ├── agent.py                 # ReAct pattern implementation
+│   ├── mcp_manager.py          # MCP server integration & management
+│   ├── config.py               # Configuration & environment setup
+│   └── models.py               # Pydantic data models
 ├── test/
-│   ├── integration_test.py      # Integration tests
-│   └── test_skill_classifier.py # Skill classification tests
+│   ├── test_react_agent.py     # ReAct agent functionality tests
+│   ├── test_models.py          # Data model validation tests
+│   ├── test_a2a_protocol.py    # A2A protocol integration tests
+│   └── test_mcp_integration.py # MCP server integration tests
 ├── .well-known/
-│   └── agent-card.json          # A2A agent card
+│   └── agent-card.json          # A2A agent card specification
 ├── output/                      # Generated document storage
-├── mcpserver.json              # MCP server configuration
-├── pyproject.toml              # Python project configuration
-├── package.json                # Node.js dependencies
+├── mcpserver.json              # MCP server configuration (immutable)
+├── pyproject.toml              # Python dependencies & project config
+├── package.json                # Node.js MCP server dependencies
 ├── .env.example                # Environment variable template
-└── README.md                   # This file
+└── README.md                   # This documentation
 ```
 
 ### Running Tests
@@ -307,25 +317,33 @@ agent-document-generator/
 # Install development dependencies
 uv sync --dev
 
-# Run integration tests
-python test\integration_test.py
+# Run ReAct agent tests
+python test\test_react_agent.py
 
-# Run skill classification tests
-python -m pytest test\test_skill_classifier.py
+# Run A2A protocol integration tests
+python test\test_a2a_protocol.py
+
+# Run MCP integration tests
+python test\test_mcp_integration.py
+
+# Run all tests with pytest
+python -m pytest test/
 ```
 
 ### Performance Optimization
 
-- **Cache System**: Improved response speed through classification result caching
-- **Parallel Processing**: Concurrent execution of initialization tasks
-- **Timeout Settings**: Appropriate timeouts applied to all API calls
-- **Token Limits**: Optimized token usage for LLM calls
+- **Server Startup**: MCP servers and agent initialized once at application startup
+- **Tool Result Preservation**: Complete execution results (4000+ chars) cached to prevent redundant operations
+- **Dynamic MCP Discovery**: Automatic server health checking and graceful degradation
+- **Context Management**: Structured conversation history with efficient processing
+- **Timeout Handling**: Appropriate timeouts and error recovery for all external services
 
 ### API Endpoints
 
-- `GET /`: Status check
-- `GET /.well-known/agent.json`: Agent information (prettified JSON)
-- `POST /`: A2A protocol message processing
+- `GET /`: Redirects to developer homepage
+- `GET /health`: Health check endpoint
+- `GET /.well-known/agent.json`: A2A agent card specification (prettified JSON)
+- `POST /`: A2A protocol message processing with ReAct pattern execution
 
 ## Integration and Connectivity
 
@@ -341,20 +359,20 @@ This agent operates in integration with the following systems:
 
 ### Common Issues
 
-1. **Timeout Errors**
-   - Check OpenAI API key
-   - Verify network connection status
-   - Adjust timeout settings
+1. **MCP Server Startup Failures**
+   - Ensure Node.js and npm/npx are installed and in PATH
+   - Check `mcpserver.json` configuration paths and commands
+   - Verify MCP server packages are installed: `npm install -g @mzxrai/mcp-webresearch`
 
-2. **MCP Server Connection Failures**
-   - Check `mcpserver.json` configuration
-   - Verify Node.js dependency installation
-   - Validate server paths and commands
+2. **OpenAI API Errors**
+   - Verify `OPENAI_API_KEY` in environment variables
+   - Check API quota and billing status
+   - Ensure network connectivity to OpenAI services
 
-3. **Milvus Connection Errors**
-   - Check `VECTOR_DB_URL` configuration
-   - Verify Milvus server running status
-   - Check network access permissions
+3. **Agent Startup Issues**
+   - Check application logs during startup
+   - Ensure all Python dependencies installed: `uv sync`
+   - Verify port 8004 is available
 
 ### Log Checking
 
@@ -369,10 +387,12 @@ MIT License
 
 ## Version Information
 
-- **Current Version**: 2.0.0
-- **A2A SDK Version**: Latest
+- **Current Version**: 2.1.0
+- **A2A SDK Version**: Latest 
+- **ReAct Pattern**: Fully implemented with tool integration
+- **MCP Protocol**: 2024-11-05 specification
 - **Supported Python Version**: 3.10+
-- **Last Updated**: December 2024
+- **Last Updated**: January 2025
 
 ---
 

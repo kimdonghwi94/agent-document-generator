@@ -1,9 +1,17 @@
 {
   "mcpServers": {
-    "mcp-pandoc": {
-      "command": "uvx",
-      "args": ["mcp-pandoc"],
-      "description": "Pandoc MCP server for document conversion and generation"
+    "web-analyzer-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@kimdonghwi94/web-analyzer-mcp",
+        "--key",
+        "985041c9-b44a-4393-831d-f127cd347460",
+        "--profile",
+        "wrong-fox-CSpYAf"
+      ]
     }
   }
 }

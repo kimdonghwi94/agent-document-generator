@@ -1,69 +1,73 @@
-# 문서 생성 에이전트
+# 고급 문서 생성 에이전트
 
-A2A 프로토콜을 활용한 HTML/Markdown 문서 생성 및 다기능 질의응답 AI 에이전트입니다.
+ReAct 아키텍처 기반의 지능형 AI 에이전트로 문서 생성, 웹 리서치, 대화형 AI를 A2A 프로토콜과 MCP 통합으로 제공합니다.
 
 ## 개요
 
-이 프로젝트는 사용자의 다양한 요청에 실시간으로 응답하여 문서 생성, 웹 검색, 질의응답 서비스를 제공하는 AI 에이전트입니다. A2A 프로토콜과 MCP 서버를 활용하여 6가지 핵심 기능을 제공합니다.
+이 프로젝트는 ReAct (Reasoning and Acting) 패턴을 활용하여 사용자 요청을 지능적으로 처리하는 고급 AI 에이전트입니다. A2A 프로토콜과 MCP(Model Control Protocol) 서버들의 완전한 통합을 통해 지능적인 문서 생성, 실시간 웹 리서치, 대화형 AI 서비스를 제공합니다. 에이전트는 적절한 도구를 동적으로 선택하고 여러 기능을 결합하여 포괄적인 응답을 제공합니다.
 
 ## 주요 기능
 
-### 6가지 핵심 스킬
+### 🤖 ReAct 아키텍처
+- **추론과 행동**: 에이전트가 사용자 요청을 분석하고 적절한 도구를 동적으로 선택
+- **다단계 처리**: 복잡한 작업을 반복적 사고와 도구 실행을 통해 처리
+- **맥락 인식**: 대화 기록을 유지하고 이전 상호작용을 바탕으로 구축
+- **지능적 도구 선택**: 각 작업에 최적화된 도구를 자동으로 선택
 
-1. **HTML 문서 생성** 
-   - 사용자 요청에 따라 구조화된 HTML 문서 생성
-   - 완전한 HTML5 구조와 CSS 스타일링 포함
-   - 웹페이지, 보고서, 가이드 문서 등 다양한 형태 지원
+### 4가지 핵심 스킬
 
-2. **Markdown 문서 생성**
-   - 깔끔하고 읽기 쉬운 마크다운 문서 생성
-   - 기술 문서, 설명서, 블로그 포스트 최적화
-   - 체계적인 구조와 풍부한 콘텐츠 제공
+1. **📝 문서 생성** 
+   - 사용자 요청에 따른 구조화된 HTML 및 Markdown 문서 생성
+   - 완전한 HTML5 구조와 모던 CSS 스타일링
+   - 다양한 형식 지원: 웹페이지, 기술 문서, 보고서, 가이드
+   - 타임스탬프 기반 자동 파일명 지정 및 저장
 
-3. **URL 기반 질의응답**
-   - 제공된 URL의 내용을 분석하여 질문에 답변
-   - 웹사이트 내용 요약 및 정보 추출
-   - MCP content-summarizer 서버 연동
+2. **🔍 웹 리서치 & 요약**
+   - MCP webresearch 서버 통합을 통한 실시간 웹 검색
+   - MCP content-summarizer를 통한 URL 콘텐츠 분석 및 요약
+   - MCP가 불가능할 때 OpenAI 직접 처리로의 지능적 폴백
+   - 포괄적인 정보 수집 및 종합
 
-4. **에이전트 정보 질의응답 (RAG)**
-   - 에이전트 자체 기능과 능력에 대한 상세 답변
-   - Milvus 벡터 데이터베이스를 통한 지식 검색
-   - 사용자 질문에 맞춤형 정보 제공
+3. **💬 지능적 Q&A**
+   - ReAct 패턴을 활용한 맥락 인식 대화형 응답
+   - 에이전트 지식을 위한 RAG(검색 증강 생성) 시스템
+   - 다양한 질의 유형을 위한 자연어 이해
+   - 대화 흐름 유지 및 이전 맥락 기반 구축
 
-5. **웹 검색**
-   - 최신 정보 검색 및 트렌드 분석
-   - 실시간 웹 검색 결과 정리 및 요약
-   - MCP webresearch 서버 연동
+4. **🔧 MCP 도구 통합**
+   - 동적 MCP 서버 발견 및 도구 열거  
+   - 자동 서버 상태 확인 및 기능 검증
+   - 외부 서비스 및 API와의 완전한 통합
+   - 우아한 성능 저하를 통한 내결함성 운영
 
-6. **일반 질의응답**
-   - 일상적인 질문과 대화에 자연스러운 응답
-   - 인사, 간단한 질문, 대화형 상호작용 지원
-   - 친근하고 전문적인 톤 유지
+### 🔧 기술적 특징
 
-### 기술적 특징
-
-- **A2A 프로토콜**: Google의 공식 A2A Python SDK 활용
-- **MCP 서버 통합**: Model Context Protocol을 통한 외부 서비스 연동
-- **LLM 기반**: OpenAI GPT 모델을 사용한 지능형 응답 생성
-- **벡터 데이터베이스**: Milvus를 활용한 RAG 시스템 (선택적)
-- **실시간 처리**: 빠른 응답을 위한 성능 최적화
-- **스킬 기반 라우팅**: 질문 유형을 자동 분석하여 최적 기능으로 연결
+- **A2A 프로토콜**: 스트리밍 지원과 JSON-RPC 통신을 갖춘 Google 공식 A2A Python SDK 기반
+- **ReAct 패턴**: 지능적인 다단계 의사결정을 위한 추론과 행동 구현
+- **MCP 통합**: 동적 Model Control Protocol 서버 발견, 상태 확인, 도구 열거
+- **LLM 기반**: 맥락 인식 처리를 갖춘 OpenAI GPT 모델을 사용한 고급 응답 생성
+- **맥락 관리**: 구조화된 ConversationContext 모델을 활용한 정교한 대화 기록 보존
+- **도구 결과 보존**: 중복 작업 방지를 위한 완전한 도구 실행 결과(4000+ 문자) 저장
+- **내결함성**: 외부 서비스 불가능 시 OpenAI 폴백을 갖춘 우아한 MCP 서버 성능 저하
+- **성능 최적화**: 적절한 타임아웃 처리, 오류 복구, 동적 도구 선택을 갖춘 효율적 처리
 
 ## 시스템 아키텍처
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   호스트 에이전트  │───▶│ 문서생성 에이전트   │───▶│   MCP 서버들     │
-│   (A2A SDK)     │    │   (A2A SDK)      │    │                │
+│   호스트 에이전트  │───▶│  ReAct 에이전트   │───▶│   MCP 서버들     │
+│   (A2A SDK)     │    │ (동적 도구 활용)   │    │                │
 └─────────────────┘    └──────────────────┘    │ • content-      │
                                │                │   summarizer    │
                                │                │ • webresearch   │
-                               ▼                └─────────────────┘
-                       ┌──────────────────┐
-                       │   생성된 문서     │    ┌─────────────────┐
-                       │   HTML/MD 파일   │───▶│  Milvus Vector  │
-                       │   응답 데이터      │    │  Database (옵션) │
-                       └──────────────────┘    └─────────────────┘
+                               ▼                │ • 커스텀 도구    │
+                       ┌──────────────────┐    └─────────────────┘
+                       │ ConversationCtx  │           │
+                       │ 도구 결과 저장    │◄──────────┘
+                       │ 생성된 문서       │    ┌─────────────────┐
+                       │ 응답 데이터       │───▶│ OpenAI GPT-4    │
+                       └──────────────────┘    │ (폴백 LLM)       │
+                                               └─────────────────┘
 ```
 
 ## 설치 및 설정
@@ -160,52 +164,54 @@ npm start
 "머신러닝이란 무엇인가요?"
 ```
 
-#### 스킬별 사용 예시
+#### 핵심 스킬별 사용 예시
 
-1. **HTML 문서 생성**
+1. **📝 문서 생성**
    - "Python 기초 가이드를 HTML 문서로 만들어줘"
-   - "양자 컴퓨팅에 대한 HTML 페이지 생성"
+   - "포괄적인 React 튜토리얼을 마크다운으로 생성해줘"
+   - "양자 컴퓨팅에 대한 기술 문서를 작성해줘"
 
-2. **Markdown 문서 생성**
-   - "API 문서를 마크다운으로 작성해줘"
-   - "React 튜토리얼을 md 파일로 생성"
+2. **🔍 웹 리서치 & 요약**
+   - "2024년 최신 AI 개발 동향을 검색해줘"
+   - "이 기사를 요약해줘: https://example.com/ai-news"
+   - "최근 Python 릴리즈 정보를 찾아서 분석해줘"
 
-3. **URL 기반 질의응답**
-   - "https://example.com 이 사이트의 주요 내용은 무엇인가요?"
-   - "다음 URL에서 중요한 정보를 요약해주세요: https://news.example.com"
+3. **💬 지능적 Q&A**
+   - "당신의 기능과 사용 가능한 도구들을 설명해줘"
+   - "복잡한 다단계 분석을 단계별로 진행해줘"
+   - "ReAct 패턴 구현에 가장 좋은 접근법은 무엇인가요?"
 
-4. **에이전트 정보 질의응답**
-   - "당신이 가지고 있는 기능은 어떤 것들이 있나요?"
-   - "너는 무엇을 할 수 있니?"
-
-5. **웹 검색**
-   - "2024년 AI 트렌드를 검색해줘"
-   - "Python 최신 버전 정보를 찾아봐"
-
-6. **일반 질의응답**
-   - "안녕하세요"
-   - "오늘 날씨는 어때?"
+4. **🔧 MCP 도구 통합**
+   - "웹 리서치 도구를 사용해서 현재 기술 트렌드를 찾아줘"
+   - "MCP 요약 서비스를 통해 이 URL 내용을 분석해줘"
+   - "사용 가능한 MCP 서버 기능들을 보여줘"
 
 ### MCP 서버 설정
 
-`mcpserver.json` 파일에서 MCP 서버들을 설정합니다:
+시스템이 `mcpserver.json`에 설정된 MCP 서버들을 자동으로 발견하고 통합합니다:
 
 ```json
 {
   "mcpServers": {
     "content-summarizer": {
       "command": "node",
-      "args": [
-        "C:/Users/donghwi/PycharmProjects/mcp-summarizer/dist/index.js"
-      ]
+      "args": ["path/to/mcp-summarizer/dist/index.js"],
+      "description": "Gemini 모델을 사용한 텍스트 요약"
     },
     "webresearch": {
       "command": "npx",
-      "args": ["-y", "@mzxrai/mcp-webresearch@latest"]
+      "args": ["-y", "@mzxrai/mcp-webresearch@latest"],
+      "description": "실시간 웹 검색 및 콘텐츠 검색"
     }
   }
 }
 ```
+
+**주요 특징:**
+- **동적 발견**: 서버들이 시작 시 자동으로 발견되고 상태 확인됨
+- **우아한 성능 저하**: 일부 MCP 서버가 실패해도 시스템이 계속 작동
+- **도구 열거**: 실행 중인 서버에서 사용 가능한 도구가 자동으로 발견됨
+- **크로스 플랫폼 지원**: 적절한 PATH 해결을 통한 향상된 Windows 지원
 
 ## 응답 형식
 
@@ -241,20 +247,26 @@ npm start
 }
 ```
 
-### 질의응답 스킬 응답 (URL QA, RAG QA, Web Search, General QA)
+### ReAct 패턴 응답 (지능적 Q&A)
 
 ```text
-"[웹 검색 결과]
+"[ReAct 에이전트 분석]
 
-🔍 검색어: Python 최신 버전
-📊 검색 결과: 5개
+🤔 추론: 사용자가 Python 버전 업데이트에 대해 질문하고 있습니다. 최신 정보를 검색해야 합니다.
 
-[1] Python 3.12 Released
+🔧 행동: 웹 리서치 MCP 도구를 사용하여 현재 Python 릴리스를 찾는 중...
+
+🔍 검색 결과: Python 최신 버전
+📊 발견: 5개의 관련 소스
+
+[1] Python 3.12 Released - 2024년 12월
 🔗 https://www.python.org/downloads/
-📝 Python 3.12의 새로운 기능과 개선사항...
+📝 주요 기능: 개선된 오류 메시지, 성능 최적화...
+
+💡 분석: 검색 결과에 따르면, Python 3.12가 성능과 개발자 경험의 상당한 개선을 제공하는 최신 안정 릴리스입니다.
 
 ---
-※ 최신 웹 검색 결과입니다. 더 자세한 정보는 해당 링크를 참조하세요."
+※ 실시간 웹 리서치와 함께 ReAct 패턴을 사용하여 생성된 응답입니다."
 ```
 
 ## 출력 파일
@@ -278,27 +290,25 @@ YYYYMMDD_HHMMSS_Document_Title.md
 agent-document-generator/
 ├── src/agent_document_generator/
 │   ├── __init__.py
-│   ├── __main__.py              # 메인 애플리케이션
-│   ├── agent_executor.py        # 에이전트 실행 로직
-│   ├── skill_classifier.py      # 스킬 분류 시스템
-│   ├── skill_handlers.py        # 개별 스킬 처리기
-│   ├── document_generator.py    # 문서 생성 엔진
-│   ├── rag_manager.py          # RAG 시스템 관리
-│   ├── mcp_manager.py          # MCP 서버 관리
-│   ├── prompts.py              # 중앙화된 프롬프트 관리
-│   ├── models.py               # 데이터 모델
-│   └── config.py               # 설정 관리
+│   ├── __main__.py              # A2A 서버 & 에이전트 스킬
+│   ├── agent_executor.py        # 에이전트 실행 오케스트레이션
+│   ├── agent.py                 # ReAct 패턴 구현
+│   ├── mcp_manager.py          # MCP 서버 통합 & 관리
+│   ├── config.py               # 설정 & 환경 설정
+│   └── models.py               # Pydantic 데이터 모델
 ├── test/
-│   ├── integration_test.py      # 통합 테스트
-│   └── test_skill_classifier.py # 스킬 분류 테스트
+│   ├── test_react_agent.py     # ReAct 에이전트 기능 테스트
+│   ├── test_models.py          # 데이터 모델 검증 테스트
+│   ├── test_a2a_protocol.py    # A2A 프로토콜 통합 테스트
+│   └── test_mcp_integration.py # MCP 서버 통합 테스트
 ├── .well-known/
-│   └── agent-card.json          # A2A 에이전트 카드
+│   └── agent-card.json          # A2A 에이전트 카드 사양
 ├── output/                      # 생성된 문서 저장소
-├── mcpserver.json              # MCP 서버 설정
-├── pyproject.toml              # Python 프로젝트 설정
-├── package.json                # Node.js 의존성
+├── mcpserver.json              # MCP 서버 설정 (불변)
+├── pyproject.toml              # Python 의존성 & 프로젝트 설정
+├── package.json                # Node.js MCP 서버 의존성
 ├── .env.example                # 환경 변수 템플릿
-└── README.ko.md                # 한국어 문서 (이 파일)
+└── README.ko.md                # 이 문서
 ```
 
 ### 테스트 실행
@@ -307,25 +317,33 @@ agent-document-generator/
 # 개발 의존성 설치
 uv sync --dev
 
-# 통합 테스트 실행
-python test\integration_test.py
+# ReAct 에이전트 테스트 실행
+python test\test_react_agent.py
 
-# 스킬 분류 테스트 실행
-python -m pytest test\test_skill_classifier.py
+# A2A 프로토콜 통합 테스트 실행
+python test\test_a2a_protocol.py
+
+# MCP 통합 테스트 실행
+python test\test_mcp_integration.py
+
+# pytest로 모든 테스트 실행
+python -m pytest test/
 ```
 
 ### 성능 최적화
 
-- **캐시 시스템**: 분류 결과 캐싱으로 응답 속도 향상
-- **병렬 처리**: 초기화 작업의 동시 실행
-- **타임아웃 설정**: 모든 API 호출에 적절한 타임아웃 적용
-- **토큰 제한**: LLM 호출 시 최적화된 토큰 사용
+- **서버 시작**: MCP 서버와 에이전트가 애플리케이션 시작 시 한 번 초기화
+- **도구 결과 보존**: 중복 작업 방지를 위해 완전한 실행 결과(4000+ 문자) 캐시
+- **동적 MCP 발견**: 자동 서버 상태 확인 및 우아한 성능 저하
+- **맥락 관리**: 효율적인 처리를 갖춴 구조화된 대화 기록
+- **타임아웃 처리**: 모든 외부 서비스에 대한 적절한 타임아웃 및 오류 복구
 
 ### API 엔드포인트
 
-- `GET /`: 상태 확인
-- `GET /.well-known/agent.json`: 에이전트 정보 (예쁘게 포맷된 JSON)
-- `POST /`: A2A 프로토콜 메시지 처리
+- `GET /`: 개발자 홈페이지로 리다이렉트
+- `GET /health`: 상태 확인 엔드포인트
+- `GET /.well-known/agent.json`: A2A 에이전트 카드 사양 (예쁘게 포맷된 JSON)
+- `POST /`: ReAct 패턴 실행을 통한 A2A 프로토콜 메시지 처리
 
 ## 통합 및 연동
 
@@ -341,20 +359,20 @@ python -m pytest test\test_skill_classifier.py
 
 ### 일반적인 문제들
 
-1. **타임아웃 오류**
-   - OpenAI API 키 확인
-   - 네트워크 연결 상태 확인
-   - 타임아웃 설정 조정
+1. **MCP 서버 시작 실패**
+   - Node.js와 npm/npx가 설치되고 PATH에 있는지 확인
+   - `mcpserver.json` 설정 경로 및 명령어 확인
+   - MCP 서버 패키지 설치 확인: `npm install -g @mzxrai/mcp-webresearch`
 
-2. **MCP 서버 연결 실패**
-   - `mcpserver.json` 설정 확인
-   - Node.js 의존성 설치 확인
-   - 서버 경로 및 명령어 검증
+2. **OpenAI API 오류**
+   - 환경 변수에서 `OPENAI_API_KEY` 확인
+   - API 할당량 및 빌링 상태 확인
+   - OpenAI 서비스에 대한 네트워크 연결 보장
 
-3. **Milvus 연결 오류**
-   - `VECTOR_DB_URL` 설정 확인
-   - Milvus 서버 실행 상태 확인
-   - 네트워크 접근 권한 확인
+3. **에이전트 시작 문제**
+   - 시작 중 애플리케이션 로그 확인
+   - 모든 Python 의존성 설치 확인: `uv sync`
+   - 포트 8004가 사용 가능한지 확인
 
 ### 로그 확인
 
@@ -381,10 +399,12 @@ MIT License
 
 ## 버전 정보
 
-- **현재 버전**: 2.0.0
-- **A2A SDK 버전**: 최신
+- **현재 버전**: 2.1.0
+- **A2A SDK 버전**: 최신 
+- **ReAct 패턴**: 도구 통합과 함께 완전 구현
+- **MCP 프로토콜**: 2024-11-05 사양
 - **지원 Python 버전**: 3.10+
-- **마지막 업데이트**: 2024년 12월
+- **마지막 업데이트**: 2025년 1월
 
 ---
 

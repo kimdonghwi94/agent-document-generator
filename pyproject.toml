@@ -5,9 +5,25 @@ build-backend = "hatchling.build"
 [project]
 name = "agent-document-generator"
 version = "1.0.0"
-description = "A2A Protocol Sub Agent Server for generating HTML/Markdown documents from user queries"
+description = "Advanced A2A Protocol Agent with Google ADK-style MCP integration for document generation"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
+authors = [
+    {name = "Agent Development Team", email = "dev@example.com"}
+]
+keywords = ["ai", "agent", "document-generator", "a2a-protocol", "mcp", "adk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "a2a-sdk[http-server]>=0.3.0",
     "openai>=1.0.0",
@@ -18,21 +34,196 @@ dependencies = [
     "markdown>=3.5.1",
     "python-dotenv>=1.0.0",
     "uvicorn>=0.34.2",
-    "sse-starlette>=2.3.5"
+    "sse-starlette>=2.3.5",
+    "mcp>=1.0.0",
+    "asyncio-mqtt>=0.16.0; extra == 'mqtt'",
+    "pymilvus>=2.3.0; extra == 'rag'",
+    "google-adk>=1.13.0",
+    "webdriver-manager>=4.0.2",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.1",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0"
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+]
+test = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+rag = [
+    "pymilvus>=2.3.0",
+    "sentence-transformers>=2.2.0",
+    "faiss-cpu>=1.7.0",
+]
+mcp = [
+    # MCP server dependencies - these are typically installed separately
+    # "model-context-protocol>=1.0.0",  # Not available in PyPI
+]
+all = [
+    "agent-document-generator[dev,test,docs,rag,mcp]"
 ]
 
+[project.scripts]
+agent-document-generator = "agent_document_generator.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/your-org/agent-document-generator"
+Documentation = "https://agent-document-generator.readthedocs.io/"
+Repository = "https://github.com/your-org/agent-document-generator.git"
+Issues = "https://github.com/your-org/agent-document-generator/issues"
+
+# Black configuration
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
 
+# isort configuration
 [tool.isort]
 profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["agent_document_generator"]
+known_third_party = ["a2a", "openai", "pydantic", "httpx"]
+
+# Ruff configuration (faster alternative to flake8)
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # Pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"test_*.py" = ["F401", "F811"]
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "a2a.*",
+    "openai.*",
+    "pymilvus.*",
+    "sentence_transformers.*",
+]
+ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+minversion = "8.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/agent_document_generator",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--tb=short"
+]
+testpaths = ["test"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__main__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# UV-specific configuration
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "black>=24.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+]
+
+[tool.hatch.version]
+path = "src/agent_document_generator/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_document_generator"]

@@ -12,3 +12,6 @@ fastapi>=0.104.0
 python-multipart>=0.0.6
 google-genai>=1.32.0
 mcp>=1.0.0
+asyncio-mqtt>=0.16.0
+pymilvus>=2.3.0
+google-adk>=1.13.0

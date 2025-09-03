@@ -66,7 +66,7 @@ class PersistentMCPClient:
             self._background_tasks[server_name] = task
             
             # 초기화 완료 대기 (최대 10초)
-            tools = await asyncio.wait_for(self._wait_for_server_ready(server_name), timeout=10.0)
+            tools = await asyncio.wait_for(self._wait_for_server_ready(server_name), timeout=20.0)
             
             logger.info(f"서버 '{server_name}' 정상 초기화: {len(tools)}개 도구")
             return tools

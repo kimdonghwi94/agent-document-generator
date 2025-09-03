@@ -2,8 +2,8 @@ import asyncio
 from src.__main__ import create_app
 
 # Create app synchronously for import
-# app = asyncio.new_event_loop().run_until_complete(create_app())
-app = create_app()
+app = asyncio.new_event_loop().run_until_complete(create_app())
+# app = create_app()
 
 if __name__ == '__main__':
     import uvicorn

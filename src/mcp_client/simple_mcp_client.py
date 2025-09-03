@@ -29,15 +29,16 @@ class PersistentMCPClient:
         self._initialized = False
         self._cleanup_tasks: List[asyncio.Task] = []
         self._background_tasks: Dict[str, asyncio.Task] = {}  # 서버별 백그라운드 태스크 추적
+        self._retry_task: Optional[asyncio.Task] = None  # 재시도 태스크
     
     async def initialize_from_config(self) -> Dict[str, List[Tool]]:
         """mcpserver.json에서 모든 서버를 초기화하고 도구들을 로드"""
+        server_name = "Web Analyzer MCP"
 
         config = Config()
         url = config.SMITHERY_BASE_URL
         profile = config.SMITHERY_PROFILE
         api_key = config.SMITHERY_API_KEY
-        server_name = "Web Analyzer MCP"
 
         all_tools = {}
         try:
@@ -49,6 +50,12 @@ class PersistentMCPClient:
             logger.error(f"MCP 서버 '{server_name}' 초기화 실패: {e}")
         
         self._initialized = True
+        
+        # 도구가 없으면 재시도 태스크 시작
+        if not all_tools:
+            logger.info("도구가 없음 - 10초마다 재시도 시작")
+            self._retry_task = asyncio.create_task(self._retry_connection_loop())
+        
         return all_tools
     
     async def _initialize_server(self, base_url: str, api_key: str, profile: str) -> List[Tool]:
@@ -82,12 +89,14 @@ class PersistentMCPClient:
     
     async def _run_persistent_mcp_server(self, url):
         """독립적인 컨텍스트에서 MCP 서버를 영구적으로 실행"""
+        server_name = "Web Analyzer MCP"  # 기본값 설정
+        
         try:
             async with streamablehttp_client(url) as (read, write, _):
                 async with ClientSession(read, write) as session:
                     await asyncio.sleep(0.5)
                     rest = await session.initialize()
-                    server_name = rest.serverInfo.name
+                    server_name = rest.serverInfo.name  # 실제 서버 이름으로 업데이트
                     # 도구 목록 가져오기
                     tool_list = await session.list_tools()
                     tools = list(tool_list.tools)
@@ -124,9 +133,46 @@ class PersistentMCPClient:
                 del self.sessions[server_name]
             if server_name in self.tools:
                 del self.tools[server_name]
-            if server_name in self._background_tasks:
-                del self._background_tasks[server_name]
-            logger.debug(f"MCP 서버 '{server_name}' 정리 완료")
+    
+    async def _retry_connection_loop(self):
+        """도구가 없을 때 10초마다 재연결 시도"""
+        retry_count = 0
+        
+        while not self.tools:  # 도구가 생길 때까지 계속 시도
+            await asyncio.sleep(10)  # 10초 대기
+            retry_count += 1
+            
+            logger.debug(f"재시도 루프 상태 확인: self.tools = {self.tools}, not self.tools = {not self.tools}")
+            
+            try:
+                logger.info(f"MCP 재연결 시도 #{retry_count}")
+                
+                # 기존 연결 정리
+                for server_name in list(self._background_tasks.keys()):
+                    await self._cleanup_server_task(server_name)
+                
+                # 재연결 시도
+                server_name = "Web Analyzer MCP"
+                config = Config()
+                url = config.SMITHERY_BASE_URL
+                profile = config.SMITHERY_PROFILE
+                api_key = config.SMITHERY_API_KEY
+                
+                tools = await self._initialize_server(url, api_key, profile)
+                if tools:
+                    self.tools[server_name] = tools
+                    logger.info(f"MCP 재연결 성공! {len(tools)}개 도구 로드됨")
+                    break
+                else:
+                    logger.debug("재연결 시도했지만 도구 없음")
+                    
+            except asyncio.CancelledError:
+                logger.debug("재시도 태스크 취소됨")
+                break
+            except Exception as e:
+                logger.debug(f"재연결 시도 실패: {e}")
+        
+        logger.info("재시도 루프 종료")
     
     async def _wait_for_server_ready(self, server_name: str) -> List[Tool]:
         """서버가 준비될 때까지 대기"""
@@ -221,10 +267,19 @@ class PersistentMCPClient:
             except asyncio.TimeoutError:
                 logger.warning("일부 서버 태스크 정리 시간 초과")
         
+        # 재시도 태스크 정리
+        if self._retry_task and not self._retry_task.done():
+            self._retry_task.cancel()
+            try:
+                await self._retry_task
+            except asyncio.CancelledError:
+                pass
+        
         # 남은 세션과 도구 정보 정리
         self.sessions.clear()
         self.tools.clear()
         self._background_tasks.clear()
+        self._retry_task = None
         self._initialized = False
         
         logger.info("PersistentMCPClient 정리 완료")

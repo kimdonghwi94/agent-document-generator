@@ -72,6 +72,8 @@ def create_mcp_skills_from_tools(server_name: str, tools: list[dict]) -> list[Ag
 async def create_agent_skills(tools):
     """Create agent skills - only MCP-specific skills (document generation and QA are basic capabilities)"""
     # Get actual MCP tools information
+    if not tools:
+        return []
     mcp_tools = tools["Web Analyzer MCP"]
 
     server_name = "Web Analyzer MCP"

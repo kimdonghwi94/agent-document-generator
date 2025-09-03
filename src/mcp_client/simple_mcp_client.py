@@ -32,12 +32,12 @@ class PersistentMCPClient:
 
     async def initialize_from_config(self) -> Dict[str, List[Tool]]:
         """mcpserver.json에서 모든 서버를 초기화하고 도구들을 로드"""
+        server_name = "Web Analyzer MCP"
 
         config = Config()
         url = config.SMITHERY_BASE_URL
         profile = config.SMITHERY_PROFILE
         api_key = config.SMITHERY_API_KEY
-        server_name = "Web Analyzer MCP"
 
         all_tools = {}
         try:
@@ -82,12 +82,14 @@ class PersistentMCPClient:
 
     async def _run_persistent_mcp_server(self, url):
         """독립적인 컨텍스트에서 MCP 서버를 영구적으로 실행"""
+        server_name = "Web Analyzer MCP"  # 기본값 설정
+
         try:
             async with streamablehttp_client(url) as (read, write, _):
                 async with ClientSession(read, write) as session:
                     await asyncio.sleep(0.5)
                     rest = await session.initialize()
-                    server_name = rest.serverInfo.name
+                    server_name = rest.serverInfo.name  # 실제 서버 이름으로 업데이트
                     # 도구 목록 가져오기
                     tool_list = await session.list_tools()
                     tools = list(tool_list.tools)

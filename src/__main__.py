@@ -69,23 +69,29 @@ def create_mcp_skills_from_tools(server_name: str, tools: list[dict]) -> list[Ag
     return skills
 
 
-async def create_agent_skills():
+async def create_agent_skills(tools):
     """Create agent skills - only MCP-specific skills (document generation and QA are basic capabilities)"""
     # Get actual MCP tools information
-    mcp_tools = await get_mcp_tools_info()
-    mcp_skills = []
-    
-    # Create skills based on actual available tools
-    for server_name, tools in mcp_tools.items():
-        if tools:  # Only create skills for servers with actual tools
-            server_skills = create_mcp_skills_from_tools(server_name, tools)
-            mcp_skills.extend(server_skills)
-    
+    mcp_tools = tools["Web Analyzer MCP"]
+
+    server_name = "Web Analyzer MCP"
+    new_meta = []
+    for tool in mcp_tools:
+        meta_tool = {"name": tool.name,
+         "description": tool.description,
+         "inputSchema": tool.inputSchema,
+         "server": server_name}
+        new_meta.append(meta_tool)
+
+    mcp_skills = create_mcp_skills_from_tools(server_name, new_meta)
     return mcp_skills
 
 
 async def create_app():
-    all_skills = await create_agent_skills()
+    agent_executor = DhAgentExecutor()
+    await agent_executor.startup()
+
+    all_skills = await create_agent_skills(agent_executor.agent.mcp_tools)
 
     agent_card = AgentCard(
         name="Advanced Document Generator Agent",
@@ -104,8 +110,6 @@ async def create_app():
     )
 
     # Create agent executor and initialize it
-    agent_executor = DhAgentExecutor()
-    await agent_executor.startup()
 
     # Create request handler
     request_handler = DefaultRequestHandler(

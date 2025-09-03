@@ -29,16 +29,15 @@ class PersistentMCPClient:
         self._initialized = False
         self._cleanup_tasks: List[asyncio.Task] = []
         self._background_tasks: Dict[str, asyncio.Task] = {}  # 서버별 백그라운드 태스크 추적
-        self._retry_task: Optional[asyncio.Task] = None  # 재시도 태스크
-    
+
     async def initialize_from_config(self) -> Dict[str, List[Tool]]:
         """mcpserver.json에서 모든 서버를 초기화하고 도구들을 로드"""
-        server_name = "Web Analyzer MCP"
 
         config = Config()
         url = config.SMITHERY_BASE_URL
         profile = config.SMITHERY_PROFILE
         api_key = config.SMITHERY_API_KEY
+        server_name = "Web Analyzer MCP"
 
         all_tools = {}
         try:
@@ -48,16 +47,10 @@ class PersistentMCPClient:
                 logger.info(f"MCP 서버 '{server_name}' 초기화 완료: {len(tools)}개 도구")
         except Exception as e:
             logger.error(f"MCP 서버 '{server_name}' 초기화 실패: {e}")
-        
+
         self._initialized = True
-        
-        # 도구가 없으면 재시도 태스크 시작
-        if not all_tools:
-            logger.info("도구가 없음 - 10초마다 재시도 시작")
-            self._retry_task = asyncio.create_task(self._retry_connection_loop())
-        
         return all_tools
-    
+
     async def _initialize_server(self, base_url: str, api_key: str, profile: str) -> List[Tool]:
         """개별 MCP 서버 초기화 및 persistent session 생성"""
         server_name = "Web Analyzer MCP"
@@ -71,13 +64,13 @@ class PersistentMCPClient:
             # 백그라운드 태스크로 MCP 서버 관리 - 독립적인 컨텍스트에서 실행
             task = asyncio.create_task(self._run_persistent_mcp_server(url))
             self._background_tasks[server_name] = task
-            
+
             # 초기화 완료 대기 (최대 10초)
             tools = await asyncio.wait_for(self._wait_for_server_ready(server_name), timeout=10.0)
-            
+
             logger.info(f"서버 '{server_name}' 정상 초기화: {len(tools)}개 도구")
             return tools
-            
+
         except asyncio.TimeoutError:
             logger.error(f"서버 '{server_name}' 초기화 시간 초과")
             await self._cleanup_server_task(server_name)
@@ -86,21 +79,19 @@ class PersistentMCPClient:
             logger.error(f"서버 '{server_name}' 연결 실패: {e}")
             await self._cleanup_server_task(server_name)
             return []
-    
+
     async def _run_persistent_mcp_server(self, url):
         """독립적인 컨텍스트에서 MCP 서버를 영구적으로 실행"""
-        server_name = "Web Analyzer MCP"  # 기본값 설정
-        
         try:
             async with streamablehttp_client(url) as (read, write, _):
                 async with ClientSession(read, write) as session:
                     await asyncio.sleep(0.5)
                     rest = await session.initialize()
-                    server_name = rest.serverInfo.name  # 실제 서버 이름으로 업데이트
+                    server_name = rest.serverInfo.name
                     # 도구 목록 가져오기
                     tool_list = await session.list_tools()
                     tools = list(tool_list.tools)
-                    
+
                     # 세션 정보 저장 (ready 상태로 표시)
                     self.sessions[server_name] = {
                         'session': session,
@@ -109,9 +100,9 @@ class PersistentMCPClient:
                         'ready': True
                     }
                     self.tools[server_name] = tools
-                    
+
                     logger.info(f"MCP 서버 '{server_name}' 준비 완료: {len(tools)}개 도구")
-                    
+
                     # 서버가 종료될 때까지 대기 - 연결 유지
                     try:
                         while True:
@@ -121,7 +112,7 @@ class PersistentMCPClient:
                                 break
                     except asyncio.CancelledError:
                         logger.debug(f"MCP 서버 '{server_name}' 태스크 취소됨")
-                    
+
         except Exception as e:
             logger.error(f"MCP 서버 '{server_name}' 실행 오류: {e}")
             # 오류 상태로 표시
@@ -133,47 +124,10 @@ class PersistentMCPClient:
                 del self.sessions[server_name]
             if server_name in self.tools:
                 del self.tools[server_name]
-    
-    async def _retry_connection_loop(self):
-        """도구가 없을 때 10초마다 재연결 시도"""
-        retry_count = 0
-        
-        while not self.tools:  # 도구가 생길 때까지 계속 시도
-            await asyncio.sleep(10)  # 10초 대기
-            retry_count += 1
-            
-            logger.debug(f"재시도 루프 상태 확인: self.tools = {self.tools}, not self.tools = {not self.tools}")
-            
-            try:
-                logger.info(f"MCP 재연결 시도 #{retry_count}")
-                
-                # 기존 연결 정리
-                for server_name in list(self._background_tasks.keys()):
-                    await self._cleanup_server_task(server_name)
-                
-                # 재연결 시도
-                server_name = "Web Analyzer MCP"
-                config = Config()
-                url = config.SMITHERY_BASE_URL
-                profile = config.SMITHERY_PROFILE
-                api_key = config.SMITHERY_API_KEY
-                
-                tools = await self._initialize_server(url, api_key, profile)
-                if tools:
-                    self.tools[server_name] = tools
-                    logger.info(f"MCP 재연결 성공! {len(tools)}개 도구 로드됨")
-                    break
-                else:
-                    logger.debug("재연결 시도했지만 도구 없음")
-                    
-            except asyncio.CancelledError:
-                logger.debug("재시도 태스크 취소됨")
-                break
-            except Exception as e:
-                logger.debug(f"재연결 시도 실패: {e}")
-        
-        logger.info("재시도 루프 종료")
-    
+            if server_name in self._background_tasks:
+                del self._background_tasks[server_name]
+            logger.debug(f"MCP 서버 '{server_name}' 정리 완료")
+
     async def _wait_for_server_ready(self, server_name: str) -> List[Tool]:
         """서버가 준비될 때까지 대기"""
         for _ in range(100):  # 10초 대기 (0.1초씩)
@@ -181,7 +135,7 @@ class PersistentMCPClient:
                 return self.sessions[server_name]['tools']
             await asyncio.sleep(0.1)
         raise TimeoutError(f"서버 '{server_name}' 준비 시간 초과")
-    
+
     async def _cleanup_server_task(self, server_name: str):
         """서버 태스크 정리"""
         if server_name in self._background_tasks:
@@ -193,33 +147,33 @@ class PersistentMCPClient:
                 except asyncio.CancelledError:
                     pass
             del self._background_tasks[server_name]
-        
+
         # 세션 정보 정리
         if server_name in self.sessions:
             del self.sessions[server_name]
         if server_name in self.tools:
             del self.tools[server_name]
-    
+
     async def call_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Any:
         """특정 서버의 도구를 실행"""
         if server_name not in self.sessions:
             raise ValueError(f"서버 '{server_name}'이 초기화되지 않음")
-        
+
         session_info = self.sessions[server_name]
-        
+
         # 서버가 준비되지 않은 경우
         if not session_info.get('ready', False):
             raise ValueError(f"서버 '{server_name}'이 준비되지 않음")
-        
+
         session = session_info['session']
-        
+
         try:
             result = await session.call_tool(tool_name, arguments)
             return result
         except Exception as e:
             logger.error(f"도구 실행 실패 '{server_name}.{tool_name}': {e}")
             raise
-    
+
     def get_tool_for_execution(self, server_name: str, tool_name: str) -> Optional[Tool]:
         """실행용 Tool 객체 반환"""
         if server_name in self.tools:
@@ -227,12 +181,12 @@ class PersistentMCPClient:
                 if tool.name == tool_name:
                     return tool
         return None
-    
+
     async def get_available_tools_from_config(self) -> Dict[str, List[Dict[str, Any]]]:
         """기존 인터페이스 호환성을 위한 메서드 - 도구 메타데이터만 반환"""
         if not self._initialized:
             await self.initialize_from_config()
-        
+
         tools_metadata = {}
         for server_name, tools in self.tools.items():
             tools_metadata[server_name] = [
@@ -244,42 +198,33 @@ class PersistentMCPClient:
                 }
                 for tool in tools
             ]
-        
+
         return tools_metadata
-    
+
     async def get_executable_tools(self) -> Dict[str, List[Tool]]:
         """실행 가능한 도구들을 반환 - 새로운 인터페이스"""
         if not self._initialized:
             await self.initialize_from_config()
-        
+
         return self.tools
-    
+
     async def cleanup(self):
         """모든 연결과 세션 정리"""
         # 백그라운드 태스크들을 먼저 정리
         cleanup_tasks = []
         for server_name in list(self._background_tasks.keys()):
             cleanup_tasks.append(self._cleanup_server_task(server_name))
-        
+
         if cleanup_tasks:
             try:
                 await asyncio.wait_for(asyncio.gather(*cleanup_tasks, return_exceptions=True), timeout=5.0)
             except asyncio.TimeoutError:
                 logger.warning("일부 서버 태스크 정리 시간 초과")
-        
-        # 재시도 태스크 정리
-        if self._retry_task and not self._retry_task.done():
-            self._retry_task.cancel()
-            try:
-                await self._retry_task
-            except asyncio.CancelledError:
-                pass
-        
+
         # 남은 세션과 도구 정보 정리
         self.sessions.clear()
         self.tools.clear()
         self._background_tasks.clear()
-        self._retry_task = None
         self._initialized = False
         
         logger.info("PersistentMCPClient 정리 완료")

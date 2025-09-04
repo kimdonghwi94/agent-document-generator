@@ -176,7 +176,7 @@ class DhAgent:
             tools_description = self._get_tools_description()
             
             # 프롬프트 생성
-            system_prompt = AgentPrompts.get_document_generator_prompt(tools_description)
+            system_prompt = AgentPrompts.get_general_assistant_prompt(tools_description)
             full_prompt = f"{system_prompt}\n\n사용자 질문: {query}"
             
             yield {

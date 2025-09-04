@@ -107,23 +107,12 @@ class DhAgent:
     async def _process_with_mcp_tools(self, query: str) -> AsyncGenerator[Dict[str, Any], None]:
         """MCP 도구를 활용한 처리"""
         
-        # 사용할 도구 결정
-        tool_to_use = None
-        
-        for srv_name, tools in self.mcp_tools.items():
-            for tool in tools:
-                if "url_to_markdown" in tool.name and ("md" in query or "마크다운" in query):
-                    tool_to_use = tool
-                    break
-                elif "qna" in tool.name and ("연락" in query or "문의" in query):
-                    tool_to_use = tool  
-                    break
-            if tool_to_use:
-                break
+        # AI를 사용해 적절한 도구 선택
+        tool_to_use = await self._select_best_tool(query)
         
         if tool_to_use:
             yield {
-                'content': f'MCP 도구 {tool_to_use.name}을(를) 사용하여 처리 중...',
+                'content': '웹 페이지를 분석하고 있습니다...',
                 'is_task_complete': False,
                 'response_type': 'text'
             }
@@ -132,30 +121,33 @@ class DhAgent:
                 # MCP 서버 준비 상태 확인
                 server_ready = await self._check_mcp_server_ready(tool_to_use.server_name)
                 if not server_ready:
-                    raise Exception(f"서버 '{tool_to_use.server_name}'가 준비되지 않았습니다")
+                    raise Exception(f"서버가 준비되지 않았습니다")
                 
                 # URL 추출
-                url = query.split()[0]
+                url = self._extract_url_from_query(query)
                 
                 # MCP 도구 실행
-                if "qna" in tool_to_use.name:
+                if "qna" in tool_to_use.name.lower():
                     # QnA 도구는 URL과 질문 필요
-                    question = " ".join(query.split()[1:]) or "연락처 정보를 알려주세요"
+                    question = self._extract_question_from_query(query)
                     result = await tool_to_use(url=url, question=question)
                 else:
                     # Markdown 도구는 URL만 필요
                     result = await tool_to_use(url=url)
-                
+
                 # MCP 결과 처리
                 if hasattr(result, 'content') and result.content:
                     content = result.content[0].text if result.content else str(result)
                 else:
                     content = str(result)
                 
+                # 자연스러운 응답으로 변환
+                final_response = await self._format_natural_response(content, query)
+                
                 yield {
-                    'content': content,
+                    'content': final_response,
                     'is_task_complete': True,
-                    'response_type': 'data' if "markdown" in tool_to_use.name.lower() else 'text'
+                    'response_type': 'text'
                 }
                 
             except Exception as e:
@@ -167,16 +159,123 @@ class DhAgent:
             # 적절한 도구가 없으면 LLM으로 처리
             async for result in self._process_with_llm(query):
                 yield result
+
+    async def _select_best_tool(self, query: str) -> Any:
+        """AI를 사용해 쿼리에 가장 적합한 도구 선택"""
+        if not self.mcp_tools:
+            return None
+            
+        # 사용 가능한 도구들의 설명 수집
+        available_tools = []
+        for srv_name, tools in self.mcp_tools.items():
+            for tool in tools:
+                available_tools.append({
+                    'name': tool.name,
+                    'description': getattr(tool, 'description', ''),
+                    'tool': tool
+                })
+        
+        if not available_tools:
+            return None
+            
+        # AI를 사용해 도구 선택
+        try:
+            tools_info = "\n".join([f"- {t['name']}: {t['description']}" for t in available_tools])
+            selection_prompt = f"""
+다음 사용자 질문에 가장 적합한 도구를 선택하세요:
+
+사용자 질문: {query}
+
+사용 가능한 도구들:
+{tools_info}
+
+응답 형식: 도구명만 반환 (예: web_content_qna)
+"""
+            
+            response = self.genai_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=selection_prompt,
+                config={'temperature': 0.1}
+            )
+            
+            selected_tool_name = response.text.strip() if response.text else ""
+            
+            # 선택된 도구 반환
+            for tool_info in available_tools:
+                if tool_info['name'] in selected_tool_name:
+                    return tool_info['tool']
+                    
+        except Exception as e:
+            logger.error(f"도구 선택 오류: {e}")
+            
+        # AI 선택 실패시 첫 번째 도구 사용
+        return available_tools[0]['tool'] if available_tools else None
+    
+    def _extract_url_from_query(self, query: str) -> str:
+        """쿼리에서 URL 추출"""
+        import re
+        url_pattern = r'https?://[^\s]+'
+        urls = re.findall(url_pattern, query)
+        return urls[0] if urls else ""
+    
+    def _extract_question_from_query(self, query: str) -> str:
+        """쿼리에서 URL을 제외한 질문 부분 추출"""
+        import re
+        # URL 제거
+        url_pattern = r'https?://[^\s]+'
+        question = re.sub(url_pattern, '', query).strip()
+        # 기본 질문이 없으면 기본값 사용
+        return question if question else "이 웹사이트에 대해 알려주세요"
+    
+    async def _format_natural_response(self, content: str, original_query: str) -> str:
+        """MCP 도구 결과를 자연스러운 응답으로 변환"""
+        try:
+            # MCP 응답에서 실제 텍스트 추출
+            if hasattr(content, 'content') and content.content:
+                # MCP CallToolResult 객체인 경우
+                actual_content = content.content[0].text if content.content else str(content)
+            elif 'content=' in str(content) and 'TextContent' in str(content):
+                # 문자열로 된 MCP 결과에서 텍스트 추출
+                import re
+                text_match = re.search(r"text='([^']+)'", str(content))
+                actual_content = text_match.group(1) if text_match else str(content)
+            else:
+                actual_content = str(content)
+            
+            format_prompt = f"""
+다음은 웹 페이지 분석 결과입니다. 사용자의 질문에 맞게 자연스럽고 유용한 한국어 답변으로 정리해주세요:
+
+사용자 질문: {original_query}
+
+분석 결과:
+{actual_content[:2000]}  
+
+요구사항:
+- 사용자가 이해하기 쉽게 설명
+- 핵심 정보만 간결하게 정리
+- 도구 이름이나 기술적인 용어는 사용하지 말 것
+- 한국어로 자연스럽게 답변
+- 만약 관련 정보가 없다면 정중하게 안내
+"""
+            
+            response = self.genai_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=format_prompt,
+                config={'temperature': 0.3}
+            )
+            
+            return response.text if response.text else actual_content
+            
+        except Exception as e:
+            logger.error(f"응답 포맷팅 오류: {e}")
+            return "죄송합니다. 웹페이지 분석 중 문제가 발생했습니다."
     
     async def _process_with_llm(self, query: str) -> AsyncGenerator[Dict[str, Any], None]:
         """Gemini LLM을 사용한 처리"""
         
         try:
-            # 도구 정보 가져오기
-            tools_description = self._get_tools_description()
-            
-            # 프롬프트 생성
-            system_prompt = AgentPrompts.get_general_assistant_prompt(tools_description)
+            # 프롬프트 생성 (도구 정보 없이)
+            system_prompt = AgentPrompts.get_general_assistant_prompt("")
             full_prompt = f"{system_prompt}\n\n사용자 질문: {query}"
             
             yield {

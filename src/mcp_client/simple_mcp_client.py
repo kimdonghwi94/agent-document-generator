@@ -56,17 +56,18 @@ class PersistentMCPClient:
         server_name = "Web Analyzer MCP"
 
         try:
-            # StdioServerParameters 생성 - 환경변수 포함
-
-            base_url = base_url
+            from urllib.parse import urlencode
+            
+            # URL 파라미터 구성
             params = {"api_key": api_key, "profile": profile}
             url = f"{base_url}?{urlencode(params)}"
+            
             # 백그라운드 태스크로 MCP 서버 관리 - 독립적인 컨텍스트에서 실행
             task = asyncio.create_task(self._run_persistent_mcp_server(url))
             self._background_tasks[server_name] = task
 
-            # 초기화 완료 대기 (최대 10초)
-            tools = await asyncio.wait_for(self._wait_for_server_ready(server_name), timeout=10.0)
+            # 초기화 완료 대기 (최대 15초)
+            tools = await asyncio.wait_for(self._wait_for_server_ready(server_name), timeout=15.0)
 
             logger.info(f"서버 '{server_name}' 정상 초기화: {len(tools)}개 도구")
             return tools
@@ -85,11 +86,13 @@ class PersistentMCPClient:
         server_name = "Web Analyzer MCP"  # 기본값 설정
 
         try:
+            # MCP 기본 연결 (헤더 없이)
             async with streamablehttp_client(url) as (read, write, _):
                 async with ClientSession(read, write) as session:
                     await asyncio.sleep(0.5)
                     rest = await session.initialize()
                     server_name = rest.serverInfo.name  # 실제 서버 이름으로 업데이트
+                    
                     # 도구 목록 가져오기
                     tool_list = await session.list_tools()
                     tools = list(tool_list.tools)
@@ -104,6 +107,8 @@ class PersistentMCPClient:
                     self.tools[server_name] = tools
 
                     logger.info(f"MCP 서버 '{server_name}' 준비 완료: {len(tools)}개 도구")
+                    for tool in tools:
+                        logger.info(f"  - {tool.name}: {tool.description}")
 
                     # 서버가 종료될 때까지 대기 - 연결 유지
                     try:

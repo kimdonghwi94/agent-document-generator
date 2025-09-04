@@ -26,6 +26,7 @@ class DhAgent:
         self.mcp_tools: Dict[str, List[MCPToolExecutor]] = {}
         self.genai_client = None
         self._initialized = False
+        self.conversation_history: Dict[str, List[Dict[str, str]]] = {}  # context_id -> list of messages
     
     async def initialize(self):
         """에이전트 초기화 - 실제 LLM + MCP 방식"""
@@ -80,6 +81,16 @@ class DhAgent:
             return
         
         try:
+            # 대화 기록 초기화 (context_id가 없으면 생성)
+            if context_id not in self.conversation_history:
+                self.conversation_history[context_id] = []
+            
+            # 사용자 메시지를 대화 기록에 추가
+            self.conversation_history[context_id].append({
+                'role': 'user',
+                'content': query
+            })
+            
             # 작업 시작 알림
             yield {
                 'content': f'요청 처리를 시작합니다: {query}',
@@ -89,11 +100,11 @@ class DhAgent:
             
             # URL이 포함된 경우 MCP 도구 먼저 사용
             if query.startswith("http") and self.mcp_tools:
-                async for result in self._process_with_mcp_tools(query):
+                async for result in self._process_with_mcp_tools(query, context_id):
                     yield result
             else:
-                # 일반 질의응답은 LLM 직접 사용
-                async for result in self._process_with_llm(query):
+                # 일반 질의응답은 LLM 직접 사용 (컨텍스트 포함)
+                async for result in self._process_with_llm(query, context_id):
                     yield result
         
         except Exception as e:
@@ -104,7 +115,7 @@ class DhAgent:
                 'response_type': 'text'
             }
     
-    async def _process_with_mcp_tools(self, query: str) -> AsyncGenerator[Dict[str, Any], None]:
+    async def _process_with_mcp_tools(self, query: str, context_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         """MCP 도구를 활용한 처리"""
         
         # AI를 사용해 적절한 도구 선택
@@ -144,6 +155,12 @@ class DhAgent:
                 # 자연스러운 응답으로 변환
                 final_response = await self._format_natural_response(content, query)
                 
+                # 어시스턴트 응답을 대화 기록에 추가
+                self.conversation_history[context_id].append({
+                    'role': 'assistant',
+                    'content': final_response
+                })
+                
                 yield {
                     'content': final_response,
                     'is_task_complete': True,
@@ -153,11 +170,11 @@ class DhAgent:
             except Exception as e:
                 logger.error(f"MCP 도구 실행 오류: {e}")
                 # MCP 실패시 LLM으로 fallback
-                async for result in self._process_with_llm(f"다음 URL에 대한 질문: {query}"):
+                async for result in self._process_with_llm(f"다음 URL에 대한 질문: {query}", context_id):
                     yield result
         else:
             # 적절한 도구가 없으면 LLM으로 처리
-            async for result in self._process_with_llm(query):
+            async for result in self._process_with_llm(query, context_id):
                 yield result
 
     async def _select_best_tool(self, query: str) -> Any:
@@ -270,13 +287,26 @@ class DhAgent:
             logger.error(f"응답 포맷팅 오류: {e}")
             return "죄송합니다. 웹페이지 분석 중 문제가 발생했습니다."
     
-    async def _process_with_llm(self, query: str) -> AsyncGenerator[Dict[str, Any], None]:
+    async def _process_with_llm(self, query: str, context_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         """Gemini LLM을 사용한 처리"""
         
         try:
-            # 프롬프트 생성 (도구 정보 없이)
+            # 대화 기록 조회
+            conversation = self.conversation_history.get(context_id, [])
+            
+            # 프롬프트 생성 (대화 기록 포함)
             system_prompt = AgentPrompts.get_general_assistant_prompt("")
-            full_prompt = f"{system_prompt}\n\n사용자 질문: {query}"
+            
+            # 대화 기록을 프롬프트에 포함
+            conversation_context = ""
+            if len(conversation) > 1:  # 현재 메시지 외에 이전 대화가 있는 경우
+                conversation_context = "\n\n=== 이전 대화 기록 ===\n"
+                for msg in conversation[:-1]:  # 마지막 메시지(현재 질문) 제외
+                    role = "사용자" if msg['role'] == 'user' else "어시스턴트"
+                    conversation_context += f"{role}: {msg['content']}\n"
+                conversation_context += "==================\n"
+            
+            full_prompt = f"{system_prompt}{conversation_context}\n\n사용자 질문: {query}"
             
             yield {
                 'content': 'AI가 응답을 생성 중입니다...',
@@ -292,6 +322,12 @@ class DhAgent:
             )
             
             content = response.text if response.text else "응답을 생성할 수 없습니다."
+            
+            # 어시스턴트 응답을 대화 기록에 추가
+            self.conversation_history[context_id].append({
+                'role': 'assistant',
+                'content': content
+            })
             
             # 구조화된 콘텐츠인지 판단
             response_type = 'data' if self._is_structured_content(content) else 'text'

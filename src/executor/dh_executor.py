@@ -16,7 +16,7 @@ from a2a.types import (
 from a2a.server.events import EventQueue
 from a2a.utils import new_agent_text_message, new_text_artifact
 
-from src.agent.dh_agent import DhAgent
+from agent.dh_agent import DhAgent
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +109,6 @@ class DhAgentExecutor(BaseAgentExecutor):
                                 state=TaskState.input_required,
                                 message=new_agent_text_message(
                                     item['content'],
-                                    context_id,
-                                    task_id,
                                 ),
                             ),
                             final=True,
@@ -128,8 +126,6 @@ class DhAgentExecutor(BaseAgentExecutor):
                                 state=TaskState.working,
                                 message=new_agent_text_message(
                                     item['content'],
-                                    context_id,
-                                    task_id,
                                 ),
                             ),
                             final=False,
@@ -147,8 +143,6 @@ class DhAgentExecutor(BaseAgentExecutor):
                         state=TaskState.failed,
                         message=new_agent_text_message(
                             f"처리 중 오류가 발생했습니다: {str(e)}",
-                            context_id,
-                            task_id,
                         ),
                     ),
                     final=True,

@@ -8,26 +8,8 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from starlette.responses import JSONResponse, RedirectResponse, HTMLResponse
 
-from src.executor.dh_executor import DhAgentExecutor
-from src.config import Config
-
-
-async def get_mcp_tools_info():
-    """mcpserver.json을 읽어서 자동으로 MCP 서버 연결하고 도구 정보 가져오기"""
-    from src.mcp_client.simple_mcp_client import PersistentMCPClient
-
-    client = PersistentMCPClient()
-    
-    try:
-        available_tools = await client.get_available_tools_from_config()
-        await client.cleanup()  # 정리 작업
-        return available_tools
-    except Exception as e:
-        try:
-            await client.cleanup()
-        except:
-            pass
-        return {}
+from executor.dh_executor import DhAgentExecutor
+from config import Config
 
 
 def create_mcp_skills_from_tools(server_name: str, tools: list[dict]) -> list[AgentSkill]:
@@ -70,23 +52,32 @@ def create_mcp_skills_from_tools(server_name: str, tools: list[dict]) -> list[Ag
 
 
 async def create_agent_skills(tools):
-    """Create agent skills - only MCP-specific skills (document generation and QA are basic capabilities)"""
-    # Get actual MCP tools information
+    """Create agent skills from all available MCP servers (sub_agent_1.py 방식)"""
     if not tools:
         return []
-    mcp_tools = tools["Web Analyzer MCP"]
-
-    server_name = "Web Analyzer MCP"
-    new_meta = []
-    for tool in mcp_tools:
-        meta_tool = {"name": tool.name,
-         "description": tool.description,
-         "inputSchema": tool.inputSchema,
-         "server": server_name}
-        new_meta.append(meta_tool)
-
-    mcp_skills = create_mcp_skills_from_tools(server_name, new_meta)
-    return mcp_skills
+    
+    all_skills = []
+    
+    # 모든 MCP 서버의 도구들을 처리
+    for server_name, mcp_tools in tools.items():
+        if not mcp_tools:  # 도구가 없는 서버는 건너뛰기
+            continue
+            
+        new_meta = []
+        for tool in mcp_tools:
+            meta_tool = {
+                "name": tool.name,
+                "description": tool.description,
+                "inputSchema": tool.inputSchema,
+                "server": server_name
+            }
+            new_meta.append(meta_tool)
+        
+        if new_meta:  # 메타데이터가 있는 경우에만 스킬 생성
+            mcp_skills = create_mcp_skills_from_tools(server_name, new_meta)
+            all_skills.extend(mcp_skills)
+    
+    return all_skills
 
 
 async def create_app():
@@ -132,9 +123,7 @@ async def create_app():
 
     @app.route("/", methods=["GET"])
     async def homepage(request):
-        return HTMLResponse(
-            """
-<!doctype html>
+        html_content = '''<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
@@ -207,6 +196,30 @@ async def create_app():
         color: #495057;
         border: 1px solid #dee2e6;
       }
+      .agent ul {
+        margin: 8px 0;
+        padding-left: 20px;
+      }
+      .agent li {
+        margin: 4px 0;
+        list-style-type: disc;
+      }
+      .agent strong {
+        font-weight: 600;
+        color: #2c3e50;
+      }
+      .agent em {
+        font-style: italic;
+        color: #6c757d;
+      }
+      .agent h1, .agent h2, .agent h3 {
+        margin: 12px 0 8px 0;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+      .agent h1 { font-size: 18px; }
+      .agent h2 { font-size: 16px; }
+      .agent h3 { font-size: 14px; }
       .input { 
         display: flex; 
         gap: 8px; 
@@ -295,14 +308,72 @@ async def create_app():
           }
         } catch (_) {}
         const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-        return `${Date.now().toString(16)}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+        return Date.now().toString(16) + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
       }
       let contextId = safeUUID();
+
+      function markdownToHtml(text) {
+        if (!text) return '';
+        
+        try {
+          let html = text.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+          
+          html = html
+            .replace(/^### (.*)$/gim, '<h3>$1</h3>')
+            .replace(/^## (.*)$/gim, '<h2>$1</h2>')
+            .replace(/^# (.*)$/gim, '<h1>$1</h1>');
+            
+          let lines = html.split('\\n');
+          let result = [];
+          let inList = false;
+          
+          for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            let trimmed = line.trim();
+            if (trimmed.startsWith('* ')) {
+              if (!inList) {
+                result.push('<ul>');
+                inList = true;
+              }
+              let listItem = trimmed.substring(2);
+              result.push('<li>' + listItem + '</li>');
+            } else {
+              if (inList) {
+                result.push('</ul>');
+                inList = false;
+              }
+              if (trimmed === '') {
+                result.push('<br>');
+              } else {
+                result.push(line);
+              }
+            }
+          }
+          
+          if (inList) {
+            result.push('</ul>');
+          }
+          
+          let finalHtml = result.join('\\n').replace(/\\n/g, '<br>');
+          finalHtml = finalHtml.replace(/<br><ul>/g, '<ul>').replace(/<\\/ul><br>/g, '</ul>');
+          
+          return finalHtml;
+        } catch (error) {
+          console.error('Markdown conversion error:', error);
+          return text;
+        }
+      }
 
       function addMsg(text, cls) {
         const div = document.createElement('div');
         div.className = 'msg ' + cls;
-        div.textContent = text;
+        
+        if (cls === 'agent') {
+          div.innerHTML = markdownToHtml(text);
+        } else {
+          div.textContent = text;
+        }
+        
         chat.appendChild(div);
         chat.scrollTop = chat.scrollHeight;
       }
@@ -313,7 +384,7 @@ async def create_app():
         div.textContent = text;
         chat.appendChild(div);
         chat.scrollTop = chat.scrollHeight;
-        return div; // 나중에 제거할 수 있도록 반환
+        return div;
       }
 
       let isProcessing = false;
@@ -327,10 +398,7 @@ async def create_app():
         input.value = '';
         btn.disabled = true;
         
-        // 사용자 메시지 추가
         addMsg(text, 'user');
-        
-        // 상태 메시지 추가
         const statusMsg = addStatusMsg('답변을 준비하고 있습니다...');
         
         try {
@@ -340,7 +408,6 @@ async def create_app():
             body: JSON.stringify({ text, contextId }) 
           });
           
-          // 상태 메시지 제거
           if (statusMsg && statusMsg.parentNode) {
             statusMsg.parentNode.removeChild(statusMsg);
           }
@@ -353,7 +420,6 @@ async def create_app():
             addMsg('[응답 없음]', 'agent');
           }
         } catch (e) {
-          // 상태 메시지 제거
           if (statusMsg && statusMsg.parentNode) {
             statusMsg.parentNode.removeChild(statusMsg);
           }
@@ -383,9 +449,8 @@ async def create_app():
       input.focus();
     </script>
   </body>
-</html>
-            """
-        )
+</html>'''
+        return HTMLResponse(html_content)
 
     @app.route("/chat", methods=["POST"])
     async def chat_endpoint(request):

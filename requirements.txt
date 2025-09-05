@@ -1,16 +1,18 @@
+# A2A Protocol
 a2a-sdk[http-server]>=0.3.0
-openai>=1.0.0
-pydantic>=2.5.0
-httpx>=0.25.0
-aiofiles>=23.2.1
-jinja2>=3.1.2
-markdown>=3.5.1
-python-dotenv>=1.0.0
-uvicorn>=0.34.2
-sse-starlette>=2.3.5
-fastapi>=0.104.0
-python-multipart>=0.0.6
+
+# AI/LLM Integration
 google-genai>=1.32.0
-mcp>=1.0.0
-asyncio-mqtt>=0.16.0
-# google-adk>=1.13.0
+
+# Web Server
+uvicorn>=0.34.2
+starlette>=0.36.0
+
+# HTTP Client
+aiohttp>=3.9.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Core Python Utilities
+typing-extensions>=4.8.0

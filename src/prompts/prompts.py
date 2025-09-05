@@ -49,6 +49,69 @@ class AgentPrompts:
         return template.format(available_tools=available_tools)
     
     @classmethod
+    def get_mcp_decision_and_execution_prompt(cls, query: str, available_tools: Dict[str, List]) -> str:
+        """MCP 도구 사용 여부 결정 및 실행 계획을 한 번에 생성하는 프롬프트"""
+        
+        # 도구 정보를 상세하게 포맷팅
+        tools_info = []
+        for server_name, tools in available_tools.items():
+            tools_info.append(f"\n=== {server_name} ===")
+            for tool in tools:
+                tools_info.append(f"도구명: {tool.name}")
+                tools_info.append(f"설명: {tool.description}")
+                tools_info.append(f"입력 스키마: {tool.inputSchema}")
+                tools_info.append(f"서버명: {server_name}")
+                tools_info.append("")
+        
+        tools_description = "\n".join(tools_info)
+        
+        return f"""
+다음 사용자 요청을 분석해서, 적절한 처리 방법을 결정해주세요:
+
+사용자 요청: {query}
+
+사용 가능한 MCP 도구들:
+{tools_description}
+
+판단 및 실행 계획:
+1. 웹 페이지 분석, URL 처리, 문서 검색 등이 필요한 경우 → 적절한 MCP 도구 선택
+2. 단순 질의응답, 일반 대화, 개념 설명 등 → LLM 직접 사용
+
+응답 형식 (정확히 이 JSON 형태로만 응답):
+{{
+  "use_mcp": true/false,
+  "tool_name": "도구명" (MCP 사용시에만),
+  "server_name": "정확한 서버명" (MCP 사용시에만, 위에 명시된 서버명 그대로 사용),
+  "arguments": {{"key": "value"}} (MCP 사용시 도구에 전달할 인자들)
+}}
+
+중요사항:
+- JSON 형태로만 응답하고 다른 텍스트는 포함하지 마세요
+- server_name은 위에 표시된 정확한 서버명을 그대로 사용하세요 (예: "web-analyzer", "summarizer" 등)
+- "서버"라는 단어를 추가하지 마세요
+"""
+
+    @classmethod
+    def get_mcp_response_format_prompt(cls, original_query: str, actual_content: str) -> str:
+        """MCP 결과를 자연스러운 응답으로 변환하는 프롬프트"""
+        return f"""
+다음은 웹 페이지 분석 결과입니다. 사용자의 질문에 맞게 자연스럽고 유용한 한국어 답변으로 정리해주세요:
+
+사용자 질문: {original_query}
+
+분석 결과:
+{actual_content}
+
+요구사항:
+- 사용자가 이해하기 쉽게 설명
+- 핵심 정보만 간결하게 정리
+- 도구 이름이나 기술적인 용어는 사용하지 말 것
+- 한국어로 자연스럽게 답변
+- 만약 관련 정보가 없다면 정중하게 안내
+- 모든 분석 결과를 활용하여 완전한 답변 제공
+"""
+
+    @classmethod
     def reload_prompts(cls):
         """Clear cache and reload all prompts."""
         cls._prompts_cache.clear()

@@ -11,34 +11,18 @@ load_dotenv()
 
 class Config:
     """Application configuration."""
-    SMITHERY_BASE_URL: str = os.getenv("SMITHERY_BASE_URL")
-    SMITHERY_API_KEY: str = os.getenv("SMITHERY_API_KEY")
-    SMITHERY_PROFILE: str = os.getenv("SMITHERY_PROFILE")
-
-    # A2A Protocol Configuration
-    A2A_AGENT_ID: str = os.getenv("A2A_AGENT_ID", "agent-document-generator")
-    A2A_HOST_URL: str = os.getenv("A2A_HOST_URL", "http://localhost:8000")
-    A2A_API_KEY: str = os.getenv("A2A_API_KEY", "")
-
-    # LLM Configuration
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4-turbo-preview")
-
-    # Google AI Configuration
-    GOOGLE_GENERATIVE_AI_API_KEY: str = os.getenv("GOOGLE_GENERATIVE_AI_API_KEY", "")
+    
+    # Google AI Configuration (Main LLM)
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
 
     # Server Configuration
     HOST: str = os.getenv("HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", "8004"))
+    PORT: int = int(os.getenv("PORT", "8000"))
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
-
-    # Output Configuration
-    OUTPUT_DIR: Path = Path(os.getenv("OUTPUT_DIR", "./"))
-    DEFAULT_FORMAT: str = os.getenv("DEFAULT_FORMAT", "html")
 
     # MCP Configuration
     MCP_CONFIG_PATH: Path = Path("mcpserver.json")
+    MCP_RUNNER_URL: str = os.getenv("MCP_RUNNER_URL", "http://localhost:10000")
 
     @classmethod
     def load_mcp_config(cls) -> dict[str, Any]:
@@ -46,7 +30,7 @@ class Config:
         import json
 
         # Try relative to project root first
-        project_root = Path(__file__).parent.parent.parent
+        project_root = Path(__file__).parent.parent
         config_path = project_root / "mcpserver.json"
 
         if config_path.exists():
@@ -61,6 +45,5 @@ class Config:
         return {"mcpServers": {}}
 
     def __init__(self):
+        """Initialize configuration."""
         pass
-        """Initialize configuration and create directories."""
-        # self.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

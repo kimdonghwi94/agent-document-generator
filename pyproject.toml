@@ -4,49 +4,48 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-document-generator"
-version = "1.0.0"
-description = "Advanced A2A Protocol Agent with Google ADK-style MCP integration for document generation"
+version = "2.1.0"
+description = "Advanced AI agent with MCP Runner integration for document generation and web analysis"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 authors = [
-    {name = "Agent Development Team", email = "dev@example.com"}
+    {name = "DH Development Team", email = "dev@example.com"}
 ]
-keywords = ["ai", "agent", "document-generator", "a2a-protocol", "mcp", "adk"]
+keywords = ["ai", "agent", "document-generator", "a2a-protocol", "mcp", "gemini"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
 ]
 dependencies = [
-    "google-genai>=1.32.0",
+    # A2A Protocol
     "a2a-sdk[http-server]>=0.3.0",
-    "openai>=1.0.0",
-    "pydantic>=2.5.0",
-    "httpx>=0.25.0",
-    "aiofiles>=23.2.1",
-    "jinja2>=3.1.2",
-    "markdown>=3.5.1",
-    "python-dotenv>=1.0.0",
+    # AI/LLM Integration  
+    "google-genai>=1.32.0",
+    # Web Server
     "uvicorn>=0.34.2",
-    "sse-starlette>=2.3.5",
-    "mcp>=1.0.0",
-    "asyncio-mqtt>=0.16.0; extra == 'mqtt'",
-    "pymilvus>=2.3.0; extra == 'rag'",
-    "google-adk>=1.13.0",
-    "webdriver-manager>=4.0.2",
+    "starlette>=0.36.0",
+    # HTTP Client
+    "aiohttp>=3.9.0", 
+    # Configuration
+    "python-dotenv>=1.0.0",
+    # Core Python Utilities
+    "typing-extensions>=4.8.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
+    "pytest-asyncio>=0.23.0", 
     "pytest-cov>=4.1.0",
     "black>=24.0.0",
     "isort>=5.13.0",
@@ -60,37 +59,19 @@ test = [
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.12.0",
 ]
-docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
-]
-rag = [
-    "pymilvus>=2.3.0",
-    "sentence-transformers>=2.2.0",
-    "faiss-cpu>=1.7.0",
-]
-mcp = [
-    # MCP server dependencies - these are typically installed separately
-    # "model-context-protocol>=1.0.0",  # Not available in PyPI
-]
-all = [
-    "agent-document-generator[dev,test,docs,rag,mcp]"
-]
 
 [project.scripts]
-agent-document-generator = "agent_document_generator.__main__:main"
+agent-document-generator = "src.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/your-org/agent-document-generator"
-Documentation = "https://agent-document-generator.readthedocs.io/"
 Repository = "https://github.com/your-org/agent-document-generator.git"
 Issues = "https://github.com/your-org/agent-document-generator/issues"
 
 # Black configuration
 [tool.black]
 line-length = 88
-target-version = ['py310', 'py311', 'py312']
+target-version = ['py39', 'py310', 'py311', 'py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -113,18 +94,18 @@ extend-exclude = '''
 profile = "black"
 multi_line_output = 3
 line_length = 88
-known_first_party = ["agent_document_generator"]
-known_third_party = ["a2a", "openai", "pydantic", "httpx"]
+known_first_party = ["src"]
+known_third_party = ["a2a", "google", "aiohttp", "starlette", "uvicorn"]
 
-# Ruff configuration (faster alternative to flake8)
+# Ruff configuration
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py39"
 
 [tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
+    "W",  # pycodestyle warnings  
     "F",  # Pyflakes
     "I",  # isort
     "B",  # flake8-bugbear
@@ -143,7 +124,7 @@ ignore = [
 
 # MyPy configuration
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -160,9 +141,9 @@ strict_equality = true
 [[tool.mypy.overrides]]
 module = [
     "a2a.*",
-    "openai.*",
-    "pymilvus.*",
-    "sentence_transformers.*",
+    "google.*",
+    "aiohttp.*",
+    "starlette.*",
 ]
 ignore_missing_imports = true
 
@@ -174,8 +155,8 @@ minversion = "8.0"
 addopts = [
     "-ra",
     "--strict-markers",
-    "--strict-config",
-    "--cov=src/agent_document_generator",
+    "--strict-config", 
+    "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
@@ -204,7 +185,7 @@ exclude_lines = [
     "def __repr__",
     "if self.debug:",
     "if settings.DEBUG",
-    "raise AssertionError",
+    "raise AssertionError", 
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
@@ -212,19 +193,5 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
-# UV-specific configuration
-[tool.uv]
-dev-dependencies = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.1.0",
-    "black>=24.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.8.0",
-]
-
-[tool.hatch.version]
-path = "src/agent_document_generator/__init__.py"
-
 [tool.hatch.build.targets.wheel]
-packages = ["src/agent_document_generator"]
+packages = ["src"]

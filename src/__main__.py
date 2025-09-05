@@ -5,7 +5,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from starlette.responses import JSONResponse, RedirectResponse, HTMLResponse
 
 from src.executor.dh_executor import DhAgentExecutor
-from config import Config
+from src.config import Config
 
 
 def create_mcp_skills_from_tools(server_name: str, tools: list[dict]) -> list[AgentSkill]:

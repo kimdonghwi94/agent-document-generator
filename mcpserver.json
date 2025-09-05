@@ -6,19 +6,6 @@
         "-y",
         "@upstash/context7-mcp"
       ]
-    },
-    "web-analyzer": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "C:/Users/donghwi/PycharmProjects/web-analyzer-mcp",
-        "run",
-        "mcp-webanalyzer"
-      ],
-      "env": {
-        "OPENAI_API_KEY": "??",
-        "OPENAI_MODEL": "gpt-4"
-      }
     }
   }
 }

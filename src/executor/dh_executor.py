@@ -16,7 +16,7 @@ from a2a.types import (
 from a2a.server.events import EventQueue
 from a2a.utils import new_agent_text_message, new_text_artifact
 
-from agent.dh_agent import DhAgent
+from src.agent.dh_agent import DhAgent
 
 logger = logging.getLogger(__name__)
 

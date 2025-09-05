@@ -1,14 +1,10 @@
-import json
-import os
-from pathlib import Path
-
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from starlette.responses import JSONResponse, RedirectResponse, HTMLResponse
 
-from executor.dh_executor import DhAgentExecutor
+from src.executor.dh_executor import DhAgentExecutor
 from config import Config
 
 

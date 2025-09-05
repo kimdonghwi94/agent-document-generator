@@ -10,9 +10,9 @@ from google import genai
 # from mcp import ClientSession, StdioServerParameters
 # from mcp.client.stdio import stdio_client
 
-from prompts.prompts import AgentPrompts
-from config import Config
-from mcp_client.mcp_runner_client import MCPRunnerClient, MCPToolExecutor
+from src.prompts.prompts import AgentPrompts
+from src.config import Config
+from src.mcp_client.mcp_runner_client import MCPRunnerClient, MCPToolExecutor
 
 logger = logging.getLogger(__name__)
 

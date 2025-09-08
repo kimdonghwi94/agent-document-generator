@@ -54,13 +54,25 @@ class AgentPrompts:
         
         # 도구 정보를 상세하게 포맷팅
         tools_info = []
+        
         for server_name, tools in available_tools.items():
-            tools_info.append(f"\n=== {server_name} ===")
+            tools_info.append(f"\n=== 서버: {server_name} ===")
             for tool in tools:
                 tools_info.append(f"도구명: {tool.name}")
                 tools_info.append(f"설명: {tool.description}")
-                tools_info.append(f"입력 스키마: {tool.inputSchema}")
-                tools_info.append(f"서버명: {server_name}")
+                
+                # 입력 스키마 정리
+                if tool.inputSchema and isinstance(tool.inputSchema, dict):
+                    properties = tool.inputSchema.get('properties', {})
+                    required = tool.inputSchema.get('required', [])
+                    schema_info = []
+                    for prop_name, prop_info in properties.items():
+                        req_mark = " (필수)" if prop_name in required else " (선택)"
+                        schema_info.append(f"  - {prop_name}: {prop_info.get('description', 'No description')}{req_mark}")
+                    if schema_info:
+                        tools_info.append(f"입력 파라미터:")
+                        tools_info.extend(schema_info)
+                
                 tools_info.append("")
         
         tools_description = "\n".join(tools_info)
@@ -73,22 +85,21 @@ class AgentPrompts:
 사용 가능한 MCP 도구들:
 {tools_description}
 
-판단 및 실행 계획:
-1. 웹 페이지 분석, URL 처리, 문서 검색 등이 필요한 경우 → 적절한 MCP 도구 선택
-2. 단순 질의응답, 일반 대화, 개념 설명 등 → LLM 직접 사용
+판단 기준:
+1. 사용자 요청이 위에 나열된 도구의 기능과 일치하는 경우 → 해당 MCP 도구 사용
+2. 일반적인 질문이나 대화인 경우 → LLM 직접 사용
 
-응답 형식 (정확히 이 JSON 형태로만 응답):
+응답 형식 (정확히 이 JSON 형태로만 응답, 다른 텍스트 포함 금지):
 {{
   "use_mcp": true/false,
-  "tool_name": "도구명" (MCP 사용시에만),
-  "server_name": "정확한 서버명" (MCP 사용시에만, 위에 명시된 서버명 그대로 사용),
-  "arguments": {{"key": "value"}} (MCP 사용시 도구에 전달할 인자들)
+  "tool_name": "도구명",
+  "server_name": "서버명",
+  "arguments": {{"파라미터명": "값"}}
 }}
 
-중요사항:
-- JSON 형태로만 응답하고 다른 텍스트는 포함하지 마세요
-- server_name은 위에 표시된 정확한 서버명을 그대로 사용하세요 (예: "web-analyzer", "summarizer" 등)
-- "서버"라는 단어를 추가하지 마세요
+주의사항:
+- 반드시 위에 나열된 정확한 서버명과 도구명을 사용하세요
+- JSON만 반환하고 추가 설명은 하지 마세요
 """
 
     @classmethod

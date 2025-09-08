@@ -49,7 +49,7 @@ class DhAgentExecutor(BaseAgentExecutor):
         
         # context_id와 task_id를 context에서 추출 (A2A 표준에 따라)
         context_id = getattr(context, 'context_id', 'default_context')
-        task_id = getattr(context, 'id', 'default_task')
+        task_id = getattr(context, 'task_id', getattr(context, 'id', 'default_task'))
         
         try:
             # 에이전트에게 작업 위임
@@ -169,7 +169,7 @@ class DhAgentExecutor(BaseAgentExecutor):
         
         # context_id와 task_id를 context에서 추출
         context_id = getattr(context, 'context_id', 'default_context')
-        task_id = getattr(context, 'id', 'default_task')
+        task_id = getattr(context, 'task_id', getattr(context, 'id', 'default_task'))
         
         if hasattr(self.agent, 'cancel'):
             await self.agent.cancel()

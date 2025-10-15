@@ -1,0 +1,18 @@
+{
+  "name": "DocumentGeneratorAgent",
+  "type": "document_generator",
+  "description": "Generates HTML and Markdown documents from user queries using LLM and MCP servers",
+  "url": "https://agent-document-generator.vercel.app",
+  "capabilities": [
+    "web_analysis",
+    "documentation_lookup", 
+    "llm_processing",
+    "general_qa",
+    "mcp_tool_execution"
+  ],
+  "protocols": ["HTTP", "A2A"],
+  "version": "2.1.0",
+  "status": "active",
+  "agent_card_endpoint": "/.well-known/agent-card.json",
+  "capabilities_endpoint": "/.well-known/agent-card.json"
+}
